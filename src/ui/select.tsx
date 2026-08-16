@@ -3,7 +3,7 @@
 import * as React from "react"
 import { Select as SelectPrimitive } from "@base-ui/react/select"
 
-import { cn } from "@/lib/utils"
+import { cn } from "@/src/lib/utils"
 import { ChevronDownIcon, CheckIcon, ChevronUpIcon } from "lucide-react"
 
 const Select = SelectPrimitive.Root
@@ -41,18 +41,17 @@ function SelectTrigger({
       data-slot="select-trigger"
       data-size={size}
       className={cn(
-        "flex w-full items-center justify-between md:gap-1.5 rounded-[8px]  border border-gray-200 bg-white px-4 py-2 text-sm whitespace-nowrap transition-all duration-200 outline-none focus:border-[#E60076] focus:ring-2 focus:ring-[#E60076]/20 disabled:cursor-not-allowed disabled:opacity-50 data-placeholder:text-gray-400 data-[size=default]:h-10 data-[size=sm]:h-8 hover:border-gray-300 hover:shadow-sm cursor-pointer",
+        "flex w-full items-center justify-between md:gap-1.5 rounded-[8px] border border-gray-200 bg-white px-4 py-2 text-sm whitespace-nowrap transition-all duration-200 outline-none focus:border-[#E60076] focus:ring-2 focus:ring-[#E60076]/20 disabled:cursor-not-allowed disabled:opacity-50 data-placeholder:text-gray-400 data-[size=default]:h-10 data-[size=sm]:h-8 hover:border-gray-300 hover:shadow-sm cursor-pointer",
         className
       )}
       {...props}
     >
-       <SelectPrimitive.Icon
+      <SelectPrimitive.Icon
         render={
           <ChevronDownIcon className="pointer-events-none size-4 text-gray-400" />
         }
       />
       {children}
-     
     </SelectPrimitive.Trigger>
   )
 }
@@ -85,13 +84,23 @@ function SelectContent({
           data-slot="select-content"
           data-align-trigger={alignItemWithTrigger}
           className={cn(
-            "relative isolate z-50 max-h-(--available-height) w-(--anchor-width) min-w-36 origin-(--transform-origin) overflow-x-hidden overflow-y-auto  rounded-[8px]  bg-white text-gray-700 shadow-lg ring-1 ring-black/5 duration-100 data-[align-trigger=true]:animate-none data-[side=bottom]:slide-in-from-top-2 data-[side=inline-end]:slide-in-from-left-2 data-[side=inline-start]:slide-in-from-right-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2 data-open:animate-in data-open:fade-in-0 data-open:zoom-in-95 data-closed:animate-out data-closed:fade-out-0 data-closed:zoom-out-95",
+            "relative isolate z-50 max-h-(--available-height) w-(--anchor-width) min-w-36 origin-(--transform-origin) overflow-x-hidden overflow-y-auto rounded-[8px] bg-white text-gray-700 shadow-lg ring-1 ring-black/5 duration-100 data-[align-trigger=true]:animate-none data-[side=bottom]:slide-in-from-top-2 data-[side=inline-end]:slide-in-from-left-2 data-[side=inline-start]:slide-in-from-right-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2 data-open:animate-in data-open:fade-in-0 data-open:zoom-in-95 data-closed:animate-out data-closed:fade-out-0 data-closed:zoom-out-95",
             className
           )}
           {...props}
         >
           <SelectScrollUpButton />
-          <SelectPrimitive.List className="p-1">{children}</SelectPrimitive.List>
+          {/* إضافة scroll-behavior: smooth للتحكم في سرعة الاسكرول */}
+          <SelectPrimitive.List 
+            className="p-1"
+            style={{
+              scrollBehavior: 'smooth',
+              scrollbarWidth: 'thin',
+              scrollSnapType: 'y proximity',
+            }}
+          >
+            {children}
+          </SelectPrimitive.List>
           <SelectScrollDownButton />
         </SelectPrimitive.Popup>
       </SelectPrimitive.Positioner>
@@ -121,7 +130,7 @@ function SelectItem({
     <SelectPrimitive.Item
       data-slot="select-item"
       className={cn(
-        "relative flex w-full cursor-pointer items-center justify-between gap-2 rounded-[8px]  py-2  ps-3  pe-3 text-sm font-medium outline-hidden transition-all duration-150 hover:  hover:text-[#E60076] focus:bg-blue-50  focus:text-[#E60076] data-[selected=true]:bg-blue-50  data-[selected=true]:text-[#E60076] data-disabled:pointer-events-none data-disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
+        "relative flex w-full cursor-pointer items-center justify-between gap-2 rounded-[8px] py-2 ps-3 pe-3 text-sm font-medium outline-hidden transition-all duration-150 hover:text-[#012738] focus:bg-blue-50 focus:text-[#012738] data-[selected=true]:bg-blue-50 data-[selected=true]:text-[#012738] data-disabled:pointer-events-none data-disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
         className
       )}
       {...props}
@@ -131,7 +140,7 @@ function SelectItem({
       </SelectPrimitive.ItemText>
       <SelectPrimitive.ItemIndicator
         render={
-          <span className="pointer-events-none flex size-4 items-center justify-center text-[#E60076]">
+          <span className="pointer-events-none flex size-4 items-center justify-center text-[#012738]">
             <CheckIcon className="size-4" />
           </span>
         }
@@ -164,7 +173,7 @@ function SelectScrollUpButton({
     <SelectPrimitive.ScrollUpArrow
       data-slot="select-scroll-up-button"
       className={cn(
-        "top-0 z-10 flex w-full cursor-default items-center justify-center bg-white py-1 text-gray-400 hover:text-gray-600 [&_svg:not([class*='size-'])]:size-4",
+        "top-0 z-10 flex w-full cursor-default items-center justify-center bg-white py-1 text-gray-400 hover:text-gray-600 transition-colors duration-200 [&_svg:not([class*='size-'])]:size-4",
         className
       )}
       {...props}
@@ -182,7 +191,7 @@ function SelectScrollDownButton({
     <SelectPrimitive.ScrollDownArrow
       data-slot="select-scroll-down-button"
       className={cn(
-        "bottom-0 z-10 flex w-full cursor-default items-center justify-center bg-white py-1 text-gray-400 hover:text-gray-600 [&_svg:not([class*='size-'])]:size-4",
+        "bottom-0 z-10 flex w-full cursor-default items-center justify-center bg-white py-1 text-gray-400 hover:text-gray-600 transition-colors duration-200 [&_svg:not([class*='size-'])]:size-4",
         className
       )}
       {...props}

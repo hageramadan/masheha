@@ -7,7 +7,7 @@ import {
   SelectContent,
   SelectItem,
   SelectTrigger,
-} from "@/components/ui/select";
+} from "@/src/ui/select";
 
 interface PhoneInputProps {
   value: string;
@@ -909,7 +909,7 @@ export default function PhoneInput({ value, onChange, required = false }: PhoneI
                 align="center" 
                 side="bottom" 
                 sideOffset={4}
-                className="min-w-[220px] max-h-[300px]"
+                className="min-w-48 max-h-96"
               >
                 {countryCodes.map((country) => (
                   <SelectItem key={country.code} value={country.code}>

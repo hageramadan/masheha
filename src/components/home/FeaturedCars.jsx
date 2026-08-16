@@ -2,8 +2,8 @@
 import { useState } from "react";
 import { Swiper, SwiperSlide } from "swiper/react";
 import { Autoplay } from "swiper/modules"; // ✅ شيلنا Pagination و Navigation
-import { Card, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/src/ui/card";
+import { Button } from "@/src/ui/button";
 import { FaCar, FaCalendarDay, FaCalendarAlt } from "react-icons/fa";
 import { toast } from "sonner";
 import Stats from "./Stats";

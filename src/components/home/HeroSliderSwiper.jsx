@@ -1,7 +1,7 @@
 'use client';
 import { Swiper, SwiperSlide } from 'swiper/react';
 import { Autoplay, Pagination, EffectFade } from 'swiper/modules'; // ✅ شيلنا Navigation
-import { Button } from '@/components/ui/button';
+import { Button } from '@/src/ui/button';
 import { FaCar } from 'react-icons/fa';
 import { toast } from 'sonner';
 import Image from 'next/image';
@@ -17,6 +17,31 @@ const slides = [
     subtitle: 'نوفر لك أفضل خدمات تأجير السيارات بأسعار تنافسية وخطوات بسيطة',
     buttonText: 'ابدأ الحجز الآن',
     image: '/images/hero.png',
+    color: 'from-blue-600 to-blue-800',
+  },
+   {
+    id: 2,
+    title: 'استأجر سيارتك المثالية',
+    subtitle: 'نوفر لك أفضل خدمات تأجير السيارات بأسعار تنافسية وخطوات بسيطة',
+    buttonText: 'ابدأ الحجز الآن',
+    image: '/images/cars/c1.webp',
+    color: 'from-blue-600 to-blue-800',
+  },
+  
+   {
+    id: 3,
+    title: 'استأجر سيارتك المثالية',
+    subtitle: 'نوفر لك أفضل خدمات تأجير السيارات بأسعار تنافسية وخطوات بسيطة',
+    buttonText: 'ابدأ الحجز الآن',
+    image: '/images/cars/c3.jpg',
+    color: 'from-blue-600 to-blue-800',
+  },
+   {
+    id: 5,
+    title: 'استأجر سيارتك المثالية',
+    subtitle: 'نوفر لك أفضل خدمات تأجير السيارات بأسعار تنافسية وخطوات بسيطة',
+    buttonText: 'ابدأ الحجز الآن',
+    image: '/images/cars/c4.jpg',
     color: 'from-blue-600 to-blue-800',
   },
 //   {
@@ -81,7 +106,7 @@ export default function HeroSliderSwiper() {
                 className="object-cover"
                 priority
               />
-              <div className={`absolute inset-0  opacity-75`} />
+              <div className={`absolute inset-0 bg-black/50 opacity-75`} />
               <div className="absolute inset-0 flex items-center justify-start">
                 <div className="container mx-auto px-4 text-white">
                   <h1 className="text-3xl md:text-5xl lg:text-6xl font-bold mb-4 leading-tight">
