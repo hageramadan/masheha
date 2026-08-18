@@ -17,8 +17,8 @@ export default function BookingServices({
   if (services.length === 0) return null;
 
   return (
-    <div className="bg-white rounded-2xl shadow-lg p-6 space-y-4">
-      <h2 className="text-xl font-bold text-gray-800">الخدمات الإضافية</h2>
+    <div className="bg-white rounded-2xl border p-3 lg:p-6 space-y-4">
+      <h2 className="text-base lg:text-lg font-bold text-gray-800">الخدمات الإضافية</h2>
       
       <div className="space-y-3">
         {services.map((service) => {
@@ -29,21 +29,22 @@ export default function BookingServices({
               key={service.id}
               type="button"
               onClick={() => onToggle(service.id)}
-              className={`w-full flex items-center justify-between p-4 rounded-xl border-2 transition-all ${
+              className={`w-full flex items-center  justify-between px-4 py-3 rounded-xl border-2 transition-all ${
                 isSelected
-                  ? 'border-primary bg-primary/5'
+                  ? 'border-gray-300 bg-primary/4'
                   : 'border-gray-200 hover:border-primary/30'
               }`}
             >
-              <div className="text-right">
-                <p className="font-bold text-gray-800">{service.name}</p>
-                {service.description && (
+              <div className="text-right flex flex-col gap-2">
+                <p className="text-sm lg:text-base  text-[#4F5352]">{service.name}</p>
+                {/* {service.description && (
                   <p className="text-sm text-gray-500">{service.description}</p>
-                )}
+                )} */}
+                <span className="text-sm lg:text-base font-bold text-primary">{service.price} ريال</span>
+
               </div>
               <div className="flex items-center gap-4">
-                <span className="font-bold text-primary">{service.price} ريال</span>
-                <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center transition-colors ${
+                <div className={`w-5 h-5 lg:w-6 lg:h-6 rounded border-2 flex items-center justify-center transition-colors ${
                   isSelected
                     ? 'border-primary bg-primary text-white'
                     : 'border-gray-300'

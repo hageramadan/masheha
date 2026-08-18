@@ -47,7 +47,7 @@ export default function ContactPage() {
           {/* معلومات الاتصال */}
           <div className="lg:col-span-1 space-y-6">
             <div className="bg-white rounded-2xl shadow-lg p-6">
-              <h2 className="text-xl font-bold text-gray-800 mb-6">معلومات الاتصال</h2>
+              <h2 className="text-base lg:text-lg font-bold text-gray-800 mb-6">معلومات الاتصال</h2>
               
               <div className="space-y-4">
                 <div className="flex items-start gap-4">
@@ -94,7 +94,7 @@ export default function ContactPage() {
 
             {/* وسائل التواصل الاجتماعي */}
             <div className="bg-white rounded-2xl shadow-lg p-6">
-              <h2 className="text-xl font-bold text-gray-800 mb-4">تابعنا</h2>
+              <h2 className="text-base lg:text-lg font-bold text-primary mb-4 mb-4">تابعنا</h2>
               <div className="flex gap-4 text-3xl">
                 <a href="#" className="text-gray-400 hover:text-green-500 transition-colors">
                   <FaWhatsapp />

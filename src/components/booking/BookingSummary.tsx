@@ -3,6 +3,7 @@
 import { Car } from '@/src/types/booking';
 import { formatCurrency } from '@/src/utils/bookingUtils';
 import { FaCar } from 'react-icons/fa';
+import { FaLocationDot } from 'react-icons/fa6';
 
 interface BookingSummaryProps {
   car: Car;
@@ -13,61 +14,77 @@ interface BookingSummaryProps {
     tax: number;
     total: number;
   };
+  deliveryFee?: number; // رسوم التوصيل
 }
 
 export default function BookingSummary({
   car,
   rentalDays,
   totals,
+  deliveryFee = 20, // القيمة الافتراضية 20 ريال
 }: BookingSummaryProps) {
-  return (
-    <div className="bg-white rounded-2xl shadow-lg p-6 ">
-      <h2 className="text-xl font-bold text-gray-800 mb-6">ملخص الطلب</h2>
+  // حساب إجمالي سعر السيارة
+  const carTotal = car.pricePerDay * rentalDays;
+  
+  // حساب الإجمالي النهائي
+  const finalTotal = carTotal + totals.servicesTotal + deliveryFee + totals.tax;
 
-      {/* السيارة */}
-      <div className="flex items-center gap-4 pb-4 border-b border-gray-100">
-        <div className="w-12 h-12 bg-gray-100 rounded-lg flex items-center justify-center">
-          <FaCar className="text-2xl text-gray-400" />
-        </div>
-        <div>
-          <p className="font-bold text-gray-800">{car.name}</p>
-          <p className="text-sm text-gray-500">
-            {formatCurrency(car.pricePerDay)} / اليوم
+  return (
+    <div className="bg-white border rounded-xl p-6">
+      <h2 className="text-base lg:text-lg font-bold text-primary mb-4">ملخص الطلب</h2>
+
+      
+        
+        <div className='flex justify-between items-center w-full  pb-3 border-b border-gray-200'>
+          <p className=" text-gray-500">
+            {car.name} {car.year}
+          </p>
+          <p className="text-base text-primary">
+            {formatCurrency(car.pricePerDay)} 
           </p>
         </div>
-      </div>
+      
 
       {/* التفاصيل */}
-      <div className="space-y-3 py-4 border-b border-gray-100">
-        <div className="flex justify-between text-sm">
-          <span className="text-gray-500">عدد الأيام</span>
-          <span className="font-bold text-gray-800">{rentalDays} أيام</span>
-        </div>
-        <div className="flex justify-between text-sm">
+      <div className="space-y-3 py-2 ">
+        <div className="flex justify-between pb-3 border-b border-gray-200 text-sm">
           <span className="text-gray-500">سعر السيارة</span>
-          <span className="font-bold text-gray-800">
-            {formatCurrency(car.pricePerDay * rentalDays)}
+          <span className="text-base text-primary">
+            {formatCurrency(carTotal)}
           </span>
         </div>
+        
         {totals.servicesTotal > 0 && (
-          <div className="flex justify-between text-sm">
-            <span className="text-gray-500">الخدمات الإضافية</span>
-            <span className="font-bold text-gray-800">
+          <div className="flex justify-between text-sm  pb-3 border-b border-gray-200">
+            <span className="text-gray-500">خدمات إضافية</span>
+            <span className="text-base text-primary">
               {formatCurrency(totals.servicesTotal)}
             </span>
           </div>
         )}
+        
+        {deliveryFee > 0 && (
+          <div className="flex justify-between text-sm  pb-3 border-b border-gray-200" >
+            <span className="text-gray-500">رسوم التوصيل</span>
+            <span className="text-base text-primary">
+              {formatCurrency(deliveryFee)}
+            </span>
+          </div>
+        )}
+         <div className="flex justify-between text-sm  pb-3 border-b border-gray-200">
+          <span className="text-gray-500">الضريبة</span>
+          <span className="text-base text-primary">
+            {formatCurrency(totals.tax)}
+          </span>
+        </div>
       </div>
 
       {/* الإجمالي */}
       <div className="space-y-2 pt-4">
-        <div className="flex justify-between text-sm">
-          <span className="text-gray-500">الضريبة</span>
-          <span className="font-bold text-gray-800">{formatCurrency(totals.tax)}</span>
-        </div>
+       
         <div className="flex justify-between text-lg font-bold">
           <span>الإجمالي</span>
-          <span className="text-primary">{formatCurrency(totals.total)}</span>
+          <span className="text-primary">{formatCurrency(finalTotal)}</span>
         </div>
       </div>
     </div>

@@ -1,15 +1,15 @@
 "use client";
 import { useState } from "react";
 import { Swiper, SwiperSlide } from "swiper/react";
-import { Autoplay } from "swiper/modules"; // ✅ شيلنا Pagination و Navigation
+import { Autoplay } from "swiper/modules";
 import { Card, CardContent } from "@/src/ui/card";
 import { Button } from "@/src/ui/button";
-import { FaCar, FaCalendarDay, FaCalendarAlt } from "react-icons/fa";
+import { FaCar, FaCalendarDay, FaCalendarAlt, FaArrowLeft } from "react-icons/fa";
 import { toast } from "sonner";
 import Stats from "./Stats";
-// استيراد أنماط Swiper (شيلنا pagination و navigation)
 import "swiper/css";
 import Image from "next/image";
+import { useRouter } from "next/navigation";
 
 // بيانات السيارات مع نوع التأجير
 const cars = [
@@ -23,7 +23,11 @@ const cars = [
     period: "يومياً",
     type: "daily",
     image: "/images/cars/car1.png",
-    specs: "1953 ",
+    specs: "1953",
+    description: "سيارة مدمجة ممتازة للاستخدام اليومي مع استهلاك اقتصادي للوقود",
+    seats: 5,
+    transmission: "أوتوماتيك",
+    fuelType: "بنزين",
   },
   {
     id: 2,
@@ -34,7 +38,11 @@ const cars = [
     period: "يومياً",
     type: "daily",
     image: "/images/cars/car1.png",
-    specs: "2490 ",
+    specs: "2490",
+    description: "سيارة سيدان فاخرة مع أداء قوي وراحة عالية",
+    seats: 5,
+    transmission: "أوتوماتيك",
+    fuelType: "بنزين",
   },
   {
     id: 3,
@@ -45,7 +53,11 @@ const cars = [
     period: "يومياً",
     type: "daily",
     image: "/images/cars/car1.png",
-    specs: "2350 ",
+    specs: "2350",
+    description: "سيارة سيدان أنيقة مع تقنيات حديثة وراحة فائقة",
+    seats: 5,
+    transmission: "أوتوماتيك",
+    fuelType: "بنزين",
   },
   {
     id: 4,
@@ -56,7 +68,11 @@ const cars = [
     period: "يومياً",
     type: "daily",
     image: "/images/cars/car1.png",
-    specs: "5600 ",
+    specs: "5600",
+    description: "سيارة دفع رباعي قوية مثالية للمغامرات والطرق الوعرة",
+    seats: 7,
+    transmission: "أوتوماتيك",
+    fuelType: "بنزين",
   },
   {
     id: 5,
@@ -67,9 +83,12 @@ const cars = [
     period: "يومياً",
     type: "daily",
     image: "/images/cars/car1.png",
-    specs: "2750 ",
+    specs: "2750",
+    description: "شاحنة متعددة الاستخدامات قوية ومتينة",
+    seats: 5,
+    transmission: "أوتوماتيك",
+    fuelType: "ديزل",
   },
-
   // سيارات التأجير الشهري
   {
     id: 6,
@@ -80,7 +99,11 @@ const cars = [
     period: "شهرياً",
     type: "monthly",
     image: "/images/cars/car1.png",
-    specs: "2990 ",
+    specs: "2990",
+    description: "سيارة فاخرة تجمع بين الأداء العالي والأناقة الألمانية",
+    seats: 5,
+    transmission: "أوتوماتيك",
+    fuelType: "بنزين",
   },
   {
     id: 7,
@@ -91,7 +114,11 @@ const cars = [
     period: "شهرياً",
     type: "monthly",
     image: "/images/cars/car1.png",
-    specs: "3000 ",
+    specs: "3000",
+    description: "سيارة SUV فاخرة مع أداء رياضي وتقنيات متطورة",
+    seats: 5,
+    transmission: "أوتوماتيك",
+    fuelType: "بنزين",
   },
   {
     id: 8,
@@ -102,7 +129,11 @@ const cars = [
     period: "شهرياً",
     type: "monthly",
     image: "/images/cars/car1.png",
-    specs: "2960 ",
+    specs: "2960",
+    description: "سيارة SUV عائلية فاخرة مع مساحة داخلية واسعة",
+    seats: 7,
+    transmission: "أوتوماتيك",
+    fuelType: "بنزين",
   },
   {
     id: 9,
@@ -113,7 +144,11 @@ const cars = [
     period: "شهرياً",
     type: "monthly",
     image: "/images/cars/car1.png",
-    specs: "2750 ",
+    specs: "2750",
+    description: "سيارة SUV سويدية تجمع بين الأمان الفائق والتصميم الأنيق",
+    seats: 7,
+    transmission: "أوتوماتيك",
+    fuelType: "بنزين",
   },
   {
     id: 10,
@@ -124,18 +159,26 @@ const cars = [
     period: "شهرياً",
     type: "monthly",
     image: "/images/cars/car1.png",
-    specs: "3500 ",
+    specs: "3500",
+    description: "سيارة SUV فاخرة مع أعلى مستويات الفخامة والأداء",
+    seats: 7,
+    transmission: "أوتوماتيك",
+    fuelType: "بنزين",
   },
 ];
 
 export default function FeaturedCars() {
-  const [activeTab, setActiveTab] = useState("daily"); // 'daily' | 'monthly'
+  const router = useRouter();
+  const [activeTab, setActiveTab] = useState("daily");
 
-  // تصفية السيارات حسب النوع
   const filteredCars = cars.filter((car) => car.type === activeTab);
 
-  // معالجة التأجير
-  const handleRent = (carName) => {
+  const handleCarClick = (carId: number) => {
+    router.push(`/cars/${carId}`);
+  };
+
+  const handleRent = (e: React.MouseEvent, carName: string) => {
+    e.stopPropagation(); // منع الانتقال إلى تفاصيل السيارة عند الضغط على زر التأجير
     toast.success(`🚗 تم تأجير ${carName} بنجاح!`, {
       description: "سنتواصل معك خلال ٢٤ ساعة لتأكيد التأجير",
       duration: 5000,
@@ -143,13 +186,12 @@ export default function FeaturedCars() {
   };
 
   return (
-    <section className="py-12 ">
+    <section className="py-12">
       <div className="container mx-auto px-4">
         {/* العنوان */}
-        <h2 className="text-2xl md:text-4xl font-bold  mb-4 text-primary">
-          احجز الان 
+        <h2 className="text-2xl md:text-4xl font-bold mb-4 text-primary">
+          احجز الان
         </h2>
-        
 
         {/* أزرار التبديل */}
         <div className="flex justify-center gap-4 mb-10">
@@ -157,11 +199,10 @@ export default function FeaturedCars() {
             onClick={() => setActiveTab("daily")}
             className={`px-8 py-6 text-lg rounded-full transition-all duration-300 ${
               activeTab === "daily"
-                ? "bg-primary text-white shadow-lg shadow-primary/30 hover:"
+                ? "bg-primary text-white shadow-lg shadow-primary/30"
                 : "bg-white text-gray-600 border-2 border-gray-200 hover:border-primary hover:text-primary"
             }`}
           >
-            {/* <FaCalendarDay className="ml-2" /> */}
             تأجير يومي
           </Button>
 
@@ -169,20 +210,21 @@ export default function FeaturedCars() {
             onClick={() => setActiveTab("monthly")}
             className={`px-8 py-6 text-lg rounded-full transition-all duration-300 ${
               activeTab === "monthly"
-                ? "bg-primary text-white shadow-lg shadow-primary/30 hover:"
+                ? "bg-primary text-white shadow-lg shadow-primary/30"
                 : "bg-white text-gray-600 border-2 border-gray-200 hover:border-primary hover:text-primary"
             }`}
           >
-            {/* <FaCalendarAlt className="ml-2" /> */}
             تأجير شهري
           </Button>
         </div>
-       <Stats/>
-        {/* Swiper Slider - بدون أسهم ونقط */}
+        
+        <Stats />
+
+        {/* Swiper Slider */}
         <Swiper
-          modules={[Autoplay]} // ✅ بس Autoplay
+          modules={[Autoplay]}
           spaceBetween={10}
-          slidesPerView={2.2} // ✅ ٢.٥ كارت في الجوال
+          slidesPerView={2.2}
           autoplay={{
             delay: 4000,
             disableOnInteraction: false,
@@ -190,24 +232,23 @@ export default function FeaturedCars() {
           breakpoints={{
             480: {
               slidesPerView: 2.5,
-              spaceBetween: 7, // ✅ مسافة صغيرة جداً للجوال
+              spaceBetween: 7,
             },
             640: {
               slidesPerView: 2.5,
-              spaceBetween: 7, // ✅ مسافة متوسطة للجوال الكبير
+              spaceBetween: 7,
             },
             768: {
               slidesPerView: 3,
-              spaceBetween: 16, // ✅ مسافة مناسبة للتابلت
+              spaceBetween: 16,
             },
             1024: {
               slidesPerView: 4.5,
-              spaceBetween: 20, // ✅ مسافة أكبر للشاشات الكبيرة
+              spaceBetween: 20,
             },
           }}
           className="px-4"
           dir="rtl"
-          // ✅ إعدادات إضافية لتحسين السحب
           touchRatio={1.5}
           resistance={true}
           resistanceRatio={0.85}
@@ -216,11 +257,13 @@ export default function FeaturedCars() {
         >
           {filteredCars.map((car) => (
             <SwiperSlide key={car.id} className="mb-5 lg:mb-12">
-              <Card className="hover:shadow-xl bg-white transition-all duration-300 hover:-translate-y-2 rounded-xl my-6">
-                <CardContent className=" bg-white">
+              <Card 
+                onClick={() => handleCarClick(car.id)}
+                className="hover:shadow-xl bg-white transition-all duration-300 hover:-translate-y-2 rounded-xl my-6 cursor-pointer"
+              >
+                <CardContent className="bg-white">
                   {/* صورة السيارة */}
-                  <div className="h-28 lg:h-48  rounded-xl flex items-center justify-center relative overflow-hidden">
-                    {/* <FaCar className="text-7xl text-primary/30" /> */}
+                  <div className="h-28 lg:h-48 rounded-xl flex items-center justify-center relative overflow-hidden">
                     <Image
                       src={car.image}
                       alt={car.name}
@@ -228,9 +271,6 @@ export default function FeaturedCars() {
                       height={200}
                       className="object-contain"
                     />
-                    {/* <span className="absolute top-2 left-2 bg-primary/10 text-primary text-xs font-bold px-3 py-1 rounded-full">
-                      {car.type === 'daily' ? 'يومي' : 'شهري'}
-                    </span> */}
                   </div>
 
                   {/* معلومات السيارة */}
@@ -240,40 +280,33 @@ export default function FeaturedCars() {
                         <p className="text-[#A7A7A7] text-sm md:text-base font-bold">
                           {car.year}
                         </p>
-
                         <h3 className="text-sm lg:text-xl font-bold text-primary line-clamp-1">
                           {car.name}
                         </h3>
                       </div>
-
-                      <span className=" w-full border-b border-gray-200 mb-1 md:mb-8 pb-2 md:pb-4 text-center text-[#0079AB] font-bold text-sm md:text-base">
-                        {car.specs}
+                      <span className="w-full border-b border-gray-200 mb-1 md:mb-8 pb-2 md:pb-4 text-center text-[#0079AB] font-bold text-sm md:text-base">
+                        {car.specs} سي سي
                       </span>
                     </div>
 
                     {/* السعر */}
-
-                    <div className="flex items-center  justify-center gap-2">
+                    <div className="flex items-center justify-center gap-2">
                       <span className="text-sm lg:text-2xl font-bold text-primary">
                         {car.price}
                       </span>
                       <div className="flex lg:flex-col items-center">
-                        <span className="text-sm text-primary">
-                          {car.currency}
-                        </span>
-                        <span className="text-xs text-primary">
-                          /{car.period}
-                        </span>
+                        <span className="text-sm text-primary">{car.currency}</span>
+                        <span className="text-xs text-primary">/{car.period}</span>
                       </div>
                     </div>
 
                     {/* زر التأجير */}
-                    {/* <Button 
-                      onClick={() => handleRent(car.name)}
-                      className="w-full mt-4 bg-primary hover: text-white rounded-xl py-5 transition-all duration-300 hover:shadow-lg"
+                    <Button 
+                      onClick={(e) => handleRent(e, car.name)}
+                      className="w-full mt-4 bg-primary hover:bg-primary/90 text-white rounded-xl py-5 transition-all duration-300 hover:shadow-lg"
                     >
-                      اتأجير الآن
-                    </Button> */}
+                      تأجير الآن
+                    </Button>
                   </div>
                 </CardContent>
               </Card>
@@ -281,20 +314,19 @@ export default function FeaturedCars() {
           ))}
         </Swiper>
 
-        {/* رسالة إذا لم توجد سيارات */}
         {filteredCars.length === 0 && (
           <div className="text-center py-12">
             <p className="text-gray-500 text-lg">لا توجد سيارات متاحة حالياً</p>
           </div>
         )}
 
-        
-          <Stats/>
-        {/* Swiper Slider - بدون أسهم ونقط */}
+        <Stats />
+
+        {/* Swiper Slider الثاني */}
         <Swiper
-          modules={[Autoplay]} // ✅ بس Autoplay
+          modules={[Autoplay]}
           spaceBetween={10}
-          slidesPerView={2.2} // ✅ ٢.٥ كارت في الجوال
+          slidesPerView={2.2}
           autoplay={{
             delay: 4000,
             disableOnInteraction: false,
@@ -302,24 +334,23 @@ export default function FeaturedCars() {
           breakpoints={{
             480: {
               slidesPerView: 2.5,
-              spaceBetween: 7, // ✅ مسافة صغيرة جداً للجوال
+              spaceBetween: 7,
             },
             640: {
               slidesPerView: 2.5,
-              spaceBetween: 7, // ✅ مسافة متوسطة للجوال الكبير
+              spaceBetween: 7,
             },
             768: {
               slidesPerView: 3,
-              spaceBetween: 16, // ✅ مسافة مناسبة للتابلت
+              spaceBetween: 16,
             },
             1024: {
               slidesPerView: 4.5,
-              spaceBetween: 20, // ✅ مسافة أكبر للشاشات الكبيرة
+              spaceBetween: 20,
             },
           }}
           className="px-4"
           dir="rtl"
-          // ✅ إعدادات إضافية لتحسين السحب
           touchRatio={1.5}
           resistance={true}
           resistanceRatio={0.85}
@@ -328,11 +359,12 @@ export default function FeaturedCars() {
         >
           {filteredCars.map((car) => (
             <SwiperSlide key={car.id}>
-              <Card className="hover:shadow-xl bg-white transition-all duration-300 hover:-translate-y-2 rounded-xl my-6">
-                <CardContent className=" bg-white">
-                  {/* صورة السيارة */}
-                  <div className="h-28 lg:h-48  rounded-xl flex items-center justify-center relative overflow-hidden">
-                    {/* <FaCar className="text-7xl text-primary/30" /> */}
+              <Card 
+                onClick={() => handleCarClick(car.id)}
+                className="hover:shadow-xl bg-white transition-all duration-300 hover:-translate-y-2 rounded-xl my-6 cursor-pointer"
+              >
+                <CardContent className="bg-white">
+                  <div className="h-28 lg:h-48 rounded-xl flex items-center justify-center relative overflow-hidden">
                     <Image
                       src={car.image}
                       alt={car.name}
@@ -340,52 +372,39 @@ export default function FeaturedCars() {
                       height={200}
                       className="object-contain"
                     />
-                    {/* <span className="absolute top-2 left-2 bg-primary/10 text-primary text-xs font-bold px-3 py-1 rounded-full">
-                      {car.type === 'daily' ? 'يومي' : 'شهري'}
-                    </span> */}
                   </div>
 
-                  {/* معلومات السيارة */}
                   <div className="mt-4">
                     <div className="flex flex-col items-center justify-center gap-1">
                       <div className="flex items-center justify-center gap-2">
                         <p className="text-[#A7A7A7] text-sm md:text-base font-bold">
                           {car.year}
                         </p>
-
                         <h3 className="text-sm lg:text-xl font-bold text-primary line-clamp-1">
                           {car.name}
                         </h3>
                       </div>
-
-                      <span className=" w-full border-b border-gray-200 mb-1 md:mb-8 pb-2 md:pb-4 text-center text-[#0079AB] font-bold text-sm md:text-base">
-                        {car.specs}
+                      <span className="w-full border-b border-gray-200 mb-1 md:mb-8 pb-2 md:pb-4 text-center text-[#0079AB] font-bold text-sm md:text-base">
+                        {car.specs} سي سي
                       </span>
                     </div>
 
-                    {/* السعر */}
-
-                    <div className="flex items-center  justify-center gap-2">
+                    <div className="flex items-center justify-center gap-2">
                       <span className="text-sm lg:text-2xl font-bold text-primary">
                         {car.price}
                       </span>
                       <div className="flex lg:flex-col items-center">
-                        <span className="text-sm text-primary">
-                          {car.currency}
-                        </span>
-                        <span className="text-xs text-primary">
-                          /{car.period}
-                        </span>
+                        <span className="text-sm text-primary">{car.currency}</span>
+                        <span className="text-xs text-primary">/{car.period}</span>
                       </div>
                     </div>
 
-                    {/* زر التأجير */}
-                    {/* <Button 
-                      onClick={() => handleRent(car.name)}
-                      className="w-full mt-4 bg-primary hover: text-white rounded-xl py-5 transition-all duration-300 hover:shadow-lg"
+                    <Button 
+                      onClick={(e) => handleRent(e, car.name)}
+                      className="w-full mt-4 bg-primary hover:bg-primary/90 text-white rounded-xl py-5 transition-all duration-300 hover:shadow-lg"
                     >
-                      اتأجير الآن
-                    </Button> */}
+                      تأجير الآن
+                    </Button>
                   </div>
                 </CardContent>
               </Card>
@@ -393,7 +412,6 @@ export default function FeaturedCars() {
           ))}
         </Swiper>
 
-        {/* رسالة إذا لم توجد سيارات */}
         {filteredCars.length === 0 && (
           <div className="text-center py-12">
             <p className="text-gray-500 text-lg">لا توجد سيارات متاحة حالياً</p>

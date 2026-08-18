@@ -21,7 +21,7 @@ export default function CarTerms({ terms }: CarTermsProps) {
           <ul className="space-y-2.5">
             {terms.conditions.map((condition, index) => (
               <li key={index} className="flex items-start gap-3 text-sm text-gray-600">
-                <FaCheckCircle className="text-green-500 text-sm mt-0.5 flex-shrink-0" />
+                <FaCheckCircle className="text-green-500 text-sm mt-0.5 shrink-0" />
                 <span>{condition}</span>
               </li>
             ))}
@@ -37,7 +37,7 @@ export default function CarTerms({ terms }: CarTermsProps) {
           <ul className="space-y-2.5">
             {terms.advantages.map((advantage, index) => (
               <li key={index} className="flex items-start gap-3 text-sm text-gray-600">
-                <FaCheckCircle className="text-primary text-sm mt-0.5 flex-shrink-0" />
+                <FaCheckCircle className="text-primary text-sm mt-0.5 shrink-0" />
                 <span>{advantage}</span>
               </li>
             ))}

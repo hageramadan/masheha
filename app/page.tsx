@@ -8,9 +8,12 @@ import LoadingScreen from "@/src/components/common/LoadingScreen";
 export default function Home() {
   return (
     <LoadingScreen>
-      <HeroSliderSwiper />
+      <div className='bg-[#FCF9F4]'>
+    <HeroSliderSwiper />
       <FeaturedCars />
       <DownloadSection />
+      </div>
+  
     </LoadingScreen>
   );
 }

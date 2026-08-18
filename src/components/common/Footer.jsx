@@ -11,12 +11,12 @@ import Link from "next/link";
 import Image from "next/image";
 export default function Footer() {
   return (
-    <footer className="bg-gray-900 text-white mt-12">
+    <footer className="bg-gray-900 text-white">
       <div className="container mx-auto px-4 py-12">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
           {/* القسم الأول */}
-          <div>
-            <Image src="/logo.png" alt="CarRent Logo" width={250} height={50} />
+          <div className="col-span-2 lg:col-span-1">
+            <Image src="/logo.png" alt="CarRent Logo" width={250} height={50} className=" w-36 lg:w-52"/>
           </div>
 
           {/* القسم الثاني */}
@@ -34,7 +34,7 @@ export default function Footer() {
                 </Link>
               </li>
               <li>
-                <Link href="/contact" className="hover:text-white">
+                <Link href="/#" className="hover:text-white">
                   انضم الينا
                 </Link>
               </li>
@@ -45,11 +45,11 @@ export default function Footer() {
           <div>
             <h4 className="font-bold mb-4 text-lg">المساعدة</h4>
             <ul className="space-y-2 text-gray-400">
-              <li>
+              {/* <li>
                 <Link href="/support" className="hover:text-white">
                   الدعم الفني
                 </Link>
-              </li>
+              </li> */}
               <li>
                 <Link href="/terms" className="hover:text-white">
                   الشروط والأحكام

@@ -45,7 +45,8 @@ export default function Navbar() {
   const navLinks = [
     { href: "/", label: "الرئيسية" },
     { href: "/cars", label: "السيارات" },
-    { href: "/contact", label: "انضم الينا" },
+    { href: "/#", label: "انضم الينا" },
+    { href: "/profile", label: "الملف الشخصي" },
   ];
 
   const isActive = (path) => {

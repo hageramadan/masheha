@@ -7,17 +7,15 @@ import BookingPayment from "./BookingPayment";
 import BookingLicenseUpload from "./BookingLicenseUpload";
 import BookingSummary from "./BookingSummary";
 import { mockCar } from "@/src/data/mock/mockCar";
-import {
-  mockAvailableDates,
-  mockAvailableTimes,
-} from "@/src/data/mock/mockServices";
+
 import {
   FaLocationDot,
 } from "react-icons/fa6";
 import PhoneInput from "../contact/PhoneInput";
-import { useState } from "react";
-import { format, setHours, setMinutes } from "date-fns";
+import { useState, useEffect } from "react";
+import { format} from "date-fns";
 import { ar } from "date-fns/locale";
+import dynamic from "next/dynamic";
 
 // مكونات shadcn/ui
 import { Calendar } from "@/src/ui/calendar";
@@ -29,41 +27,35 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/src/ui/select";
-import { Button } from "@/src/ui/button";
 import { cn } from "@/src/lib/utils";
-
-// مكون الخريطة - سنستخدم react-leaflet
-import { MapContainer, TileLayer, Marker, useMapEvents } from "react-leaflet";
-import "leaflet/dist/leaflet.css";
-import L from "leaflet";
 import { FaCalendarAlt, FaMapMarkerAlt } from "react-icons/fa";
 
-// إصلاح أيقونة Leaflet
-delete (L.Icon.Default.prototype as any)._getIconUrl;
-L.Icon.Default.mergeOptions({
-  iconRetinaUrl: "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon-2x.png",
-  iconUrl: "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon.png",
-  shadowUrl: "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png",
-});
+// استيراد ديناميكي لمكونات الخريطة مع تعطيل SSR
+const MapContainer = dynamic(
+  () => import("react-leaflet").then((mod) => mod.MapContainer),
+  { ssr: false }
+);
+
+const TileLayer = dynamic(
+  () => import("react-leaflet").then((mod) => mod.TileLayer),
+  { ssr: false }
+);
+
+
+
+
+// استيراد CSS في العميل فقط
+import "leaflet/dist/leaflet.css";
 
 interface BookingFormProps {
   carId: string;
 }
 
-// مكون لالتقاط النقرات على الخريطة
-function LocationMarker({ onLocationSelect }: { onLocationSelect: (lat: number, lng: number) => void }) {
-  const [position, setPosition] = useState<[number, number] | null>(null);
-
-  useMapEvents({
-    click(e) {
-      const { lat, lng } = e.latlng;
-      setPosition([lat, lng]);
-      onLocationSelect(lat, lng);
-    },
-  });
-
-  return position ? <Marker position={position} /> : null;
-}
+// مكون لالتقاط النقرات على الخريطة - سيتم تحميله ديناميكياً
+const LocationMarkerComponent = dynamic(
+  () => import("./LocationMarker"),
+  { ssr: false }
+);
 
 export default function BookingForm({ carId }: BookingFormProps) {
   const {
@@ -82,6 +74,64 @@ export default function BookingForm({ carId }: BookingFormProps) {
   const [isCalendarOpen, setIsCalendarOpen] = useState(false);
   const [isMapOpen, setIsMapOpen] = useState(false);
   const [mapPosition, setMapPosition] = useState<[number, number] | null>(null);
+  const [isMounted, setIsMounted] = useState(false);
+  const [selectedAddress, setSelectedAddress] = useState<string>("");
+  const [isLoadingAddress, setIsLoadingAddress] = useState(false);
+
+  // تحميل Leaflet في العميل فقط
+  useEffect(() => {
+    setIsMounted(true);
+    import("leaflet").then((L) => {
+      // إصلاح أيقونة Leaflet
+      delete (L.Icon.Default.prototype as any)._getIconUrl;
+      L.Icon.Default.mergeOptions({
+        iconRetinaUrl: "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon-2x.png",
+        iconUrl: "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon.png",
+        shadowUrl: "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png",
+      });
+    });
+  }, []);
+
+  // دالة للحصول على اسم المكان من الإحداثيات (Reverse Geocoding)
+  const getAddressFromCoordinates = async (lat: number, lng: number) => {
+    setIsLoadingAddress(true);
+    try {
+      const response = await fetch(
+        `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json&accept-language=ar`
+      );
+      const data = await response.json();
+      
+      if (data && data.display_name) {
+        const address = data.address;
+        const city = address.city || address.town || address.village || address.suburb || '';
+        const district = address.suburb || address.neighbourhood || address.quarter || '';
+        const street = address.road || '';
+        const country = address.country || '';
+        
+        let fullAddress = '';
+        if (street) fullAddress += `${street}، `;
+        if (district) fullAddress += `${district}، `;
+        if (city) fullAddress += `${city}، `;
+        if (country) fullAddress += `${country}`;
+        
+        if (!fullAddress) {
+          fullAddress = data.display_name;
+        }
+        
+        setSelectedAddress(fullAddress);
+        updateField("pickupLocation", city || district || fullAddress);
+        updateField("pickupAddress", fullAddress);
+        return fullAddress;
+      }
+    } catch (error) {
+      console.error("Error fetching address:", error);
+      setSelectedAddress(`موقع محدد (${lat.toFixed(6)}, ${lng.toFixed(6)})`);
+      updateField("pickupLocation", `موقع محدد (${lat.toFixed(6)}, ${lng.toFixed(6)})`);
+      updateField("pickupAddress", `خط العرض: ${lat.toFixed(6)}, خط الطول: ${lng.toFixed(6)}`);
+    } finally {
+      setIsLoadingAddress(false);
+    }
+  };
 
   const handlePhoneChange = (phone: string, code: string) => {
     setPhoneNumber(phone);
@@ -139,11 +189,9 @@ export default function BookingForm({ carId }: BookingFormProps) {
   };
 
   // تحديث الموقع عند النقر على الخريطة
-  const handleLocationSelect = (lat: number, lng: number) => {
+  const handleLocationSelect = async (lat: number, lng: number) => {
     setMapPosition([lat, lng]);
-    // هنا يمكنك تحديث الحقول أو استدعاء API للحصول على العنوان
-    updateField("pickupLocation", `موقع محدد (${lat.toFixed(6)}, ${lng.toFixed(6)})`);
-    updateField("pickupAddress", `خط العرض: ${lat.toFixed(6)}, خط الطول: ${lng.toFixed(6)}`);
+    await getAddressFromCoordinates(lat, lng);
   };
 
   return (
@@ -354,56 +402,37 @@ export default function BookingForm({ carId }: BookingFormProps) {
           </div>
 
           {/* Location with Map */}
-          <div className="bg-white rounded-2xl shadow-lg p-6 space-y-4">
-            <div className="flex items-center justify-between">
-              <h2 className="text-xl font-bold text-gray-800">
-                <FaMapMarkerAlt className="inline ml-1 text-primary" />
+          <div className="bg-white space-y-4">
+            <div className="flex flex-col gap-2">
+              <h2 className="text-sm lg:text-base font-bold text-gray-800">
+            
                 موقع الاستلام
               </h2>
               <button
                 type="button"
                 onClick={() => setIsMapOpen(true)}
-                className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-primary border border-primary/30 rounded-xl hover:bg-primary/5 transition-colors"
+                className="flex items-center gap-2 px-4 py-3 justify-center text-sm lg:text-lg font-medium bg-primary text-white border border-primary/30 rounded-xl hover:bg-primary/90 transition-colors"
               >
-                <FaLocationDot className="h-4 w-4" />
+              
                 حدد الموقع على الخريطة
               </button>
             </div>
 
-            <div>
-              <input
-                type="text"
-                value={bookingData.pickupLocation}
-                onChange={(e) => updateField("pickupLocation", e.target.value)}
-                className={`w-full px-4 py-3 border-2 rounded-xl focus:outline-none transition-colors ${
-                  errors.pickupLocation
-                    ? "border-red-500"
-                    : "border-gray-200 focus:border-primary"
-                }`}
-                placeholder="المدينة، الحي"
-              />
-              {errors.pickupLocation && (
-                <p className="text-red-500 text-sm mt-1">
-                  {errors.pickupLocation}
-                </p>
-              )}
-            </div>
+        
 
-            <div>
-              <input
-                type="text"
-                value={bookingData.pickupAddress}
-                onChange={(e) => updateField("pickupAddress", e.target.value)}
-                className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-primary focus:outline-none transition-colors"
-                placeholder="العنوان التفصيلي"
-              />
-            </div>
-
-            {/* عرض الإحداثيات إذا تم تحديدها */}
+            {/* عرض الموقع المحدد */}
             {mapPosition && (
-              <div className="text-xs text-gray-500 bg-gray-50 p-2 rounded-lg">
-                <span className="font-medium">الموقع المحدد:</span>{" "}
-                {mapPosition[0].toFixed(6)}, {mapPosition[1].toFixed(6)}
+              <div className="text-xs text-gray-500 bg-gray-50 p-2 rounded-lg flex items-center gap-2">
+                <FaLocationDot className="h-3 w-3 text-primary" />
+                <span className="font-medium">الموقع المحدد:</span>
+                {isLoadingAddress ? (
+                  <span className="flex items-center gap-1">
+                    <span className="w-3 h-3 border-2 border-primary border-t-transparent rounded-full animate-spin"></span>
+                    جاري جلب العنوان...
+                  </span>
+                ) : (
+                  <span>{selectedAddress || `${mapPosition[0].toFixed(6)}, ${mapPosition[1].toFixed(6)}`}</span>
+                )}
               </div>
             )}
           </div>
@@ -429,6 +458,7 @@ export default function BookingForm({ carId }: BookingFormProps) {
           car={mockCar}
           rentalDays={bookingData.rentalDays}
           totals={totals}
+           deliveryFee={20} 
         />
 
         <BookingPayment
@@ -454,8 +484,8 @@ export default function BookingForm({ carId }: BookingFormProps) {
         </button>
       </div>
 
-      {/* Modal الخريطة */}
-      {isMapOpen && (
+      {/* Modal الخريطة - يتم عرضه فقط في العميل */}
+      {isMounted && isMapOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-hidden">
             <div className="flex items-center justify-between p-4 border-b">
@@ -472,18 +502,20 @@ export default function BookingForm({ carId }: BookingFormProps) {
               </button>
             </div>
             <div className="p-4">
-              <div className="h-[500px] w-full rounded-xl overflow-hidden">
-                <MapContainer
-                  center={[24.7136, 46.6753]} // الرياض كموقع افتراضي
-                  zoom={13}
-                  style={{ height: "100%", width: "100%" }}
-                >
-                  <TileLayer
-                    attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-                    url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-                  />
-                  <LocationMarker onLocationSelect={handleLocationSelect} />
-                </MapContainer>
+              <div className="h-125 w-full rounded-xl overflow-hidden">
+                {isMounted && (
+                  <MapContainer
+                    center={[24.7136, 46.6753]}
+                    zoom={13}
+                    style={{ height: "100%", width: "100%" }}
+                  >
+                    <TileLayer
+                      attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+                      url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                    />
+                    <LocationMarkerComponent onLocationSelect={handleLocationSelect} />
+                  </MapContainer>
+                )}
               </div>
               <div className="mt-4 text-sm text-gray-500 text-center">
                 انقر على الخريطة لتحديد موقع الاستلام

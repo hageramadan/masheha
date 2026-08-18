@@ -42,8 +42,8 @@ export default function BookingLicenseUpload({
   };
 
   return (
-    <div className="bg-white rounded-2xl shadow-lg p-6 space-y-4">
-      <h2 className="text-xl font-bold text-gray-800">
+    <div className="bg-white space-y-4">
+      <h2 className="text-base lg:text-lg font-bold text-primary mb-4">
         رخصة القيادة *
         <span className="block text-sm font-normal text-gray-500 mt-1">
           أرفق صورة الرخصة - سارية المفعول

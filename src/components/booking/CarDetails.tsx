@@ -81,7 +81,7 @@ export default function CarDetails({ car }: CarDetailsProps) {
                   key={index}
                   className="flex items-center gap-2 text-sm lg:text-base text-gray-600"
                 >
-                  <GoDotFill className="text-[#717182] text-[10px] flex-shrink-0" />
+                  <GoDotFill className="text-[#717182] text-[10px] shrink-0" />
                   <span className="line-clamp-1">{condition}</span>
                 </div>
               ))}
