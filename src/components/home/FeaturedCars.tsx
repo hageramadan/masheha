@@ -394,7 +394,7 @@ export default function FeaturedCars() {
                         {car.price}
                       </span>
                       <div className="flex lg:flex-col items-center">
-                        <span className="text-sm text-primary">{car.currency}</span>
+                        <span className="text-xs lg:text-sm text-primary">{car.currency}</span>
                         <span className="text-xs text-primary">/{car.period}</span>
                       </div>
                     </div>
