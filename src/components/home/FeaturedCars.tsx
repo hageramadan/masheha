@@ -285,7 +285,7 @@ export default function FeaturedCars() {
                         </h3>
                       </div>
                       <span className="w-full border-b border-gray-200 mb-1 md:mb-8 pb-2 md:pb-4 text-center text-[#0079AB] font-bold text-sm md:text-base">
-                        {car.specs} سي سي
+                        {car.specs}
                       </span>
                     </div>
 
@@ -301,12 +301,12 @@ export default function FeaturedCars() {
                     </div>
 
                     {/* زر التأجير */}
-                    <Button 
+                    {/* <Button 
                       onClick={(e) => handleRent(e, car.name)}
                       className="w-full mt-4 bg-primary hover:bg-primary/90 text-white rounded-xl py-5 transition-all duration-300 hover:shadow-lg"
                     >
                       تأجير الآن
-                    </Button>
+                    </Button> */}
                   </div>
                 </CardContent>
               </Card>
