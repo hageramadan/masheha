@@ -57,7 +57,7 @@ export default function CarDetails({ car }: CarDetailsProps) {
                 <p className="text-sm lg:text-base font-bold text-gray-700 mb-2">
                   مزايا التأجير
                 </p>
-                <div className="flex flex-wrap items-center gap-0">
+                <div className="flex flex-col items-start gap-0">
                   {advantages.map((advantage, index) => (
                     <span
                       key={index}
@@ -74,7 +74,7 @@ export default function CarDetails({ car }: CarDetailsProps) {
 
           {/* ✅ العمود الرابع والخامس - الشروط */}
           <div className="md:col-span-2 space-y-2">
-            <p className="text-sm lg:text-base font-bold text-gray-700 mb-1">شروط التأجير</p>
+            <p className="text-sm lg:text-base font-bold text-gray-700 mb-2">شروط التأجير</p>
             <div className="space-y-1.5">
               {car.terms?.conditions?.map((condition, index) => (
                 <div

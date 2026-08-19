@@ -167,7 +167,7 @@ export default function BookingsList() {
                   <FaMapMarkerAlt className="h-3 w-3 lg:h-4 lg:w-4" />
                   <span className='text-sm lg:text-sm'>{booking.location}</span>
                 </div>
-                <div className='flex flex-wrap items-center gap-2 py-1'>
+                {/* <div className='flex flex-wrap items-center gap-2 py-1'>
                   <div className="flex items-center gap-2 text-xs text-gray-500 bg-gray-100 rounded py-1 px-3">
                     <FaClock className="h-3 w-3 lg:h-4 lg:w-4" />
                     <span className='text-sm lg:text-sm'>{booking.pickupTime}</span>
@@ -176,7 +176,7 @@ export default function BookingsList() {
                     <FaRoad className="h-3 w-3 lg:h-4 lg:w-4" />
                     <span className='text-sm lg:text-sm'>الكيلومترات المتاحة {booking.kilometers}</span>
                   </div>
-                </div>
+                </div> */}
               </div>
             </div>
           </div>
