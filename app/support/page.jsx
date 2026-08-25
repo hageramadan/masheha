@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { FaClock, FaEnvelope, FaHeadset, FaPhone, FaWhatsapp } from 'react-icons/fa';
 import { FaMessage } from 'react-icons/fa6';
 // import { FaHeadset, FaWhatsapp, FaEnvelope, FaPhone, FaClock, FaMessage } from 'react-icons/fa';
-import { toast } from 'sonner';
+import { toast } from 'react-hot-toast';
 
 export default function SupportPage() {
   const [message, setMessage] = useState('');
@@ -11,7 +11,7 @@ export default function SupportPage() {
   const handleSubmit = (e) => {
     e.preventDefault();
     if (!message.trim()) {
-      toast.error('⚠️ يرجى كتابة رسالتك');
+      toast.error(' يرجى كتابة رسالتك');
       return;
     }
     toast.success('✅ تم إرسال رسالتك، سيتم الرد عليك خلال 24 ساعة');

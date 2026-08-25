@@ -1,7 +1,7 @@
 'use client';
 import { useState } from 'react';
 import { FaPhone, FaEnvelope, FaMapMarkerAlt, FaClock, FaWhatsapp, FaFacebook, FaInstagram, FaTwitter } from 'react-icons/fa';
-import { toast } from 'sonner';
+import { toast } from 'react-hot-toast';
 
 export default function ContactPage() {
   const [formData, setFormData] = useState({

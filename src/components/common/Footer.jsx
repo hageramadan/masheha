@@ -1,12 +1,4 @@
-import {
-  FaFacebook,
-  FaTwitter,
-  FaInstagram,
-  FaCar,
-  FaEnvelope,
-  FaMapMarkerAlt,
-  FaPhone,
-} from "react-icons/fa";
+import { FaEnvelope, FaPhone } from "react-icons/fa";
 import Link from "next/link";
 import Image from "next/image";
 export default function Footer() {
@@ -14,12 +6,18 @@ export default function Footer() {
     <footer className="bg-gray-900 text-white">
       <div className="container mx-auto px-4 py-12">
         <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
-          {/* القسم الأول */}
+        
           <div className="col-span-2 lg:col-span-1">
-            <Image src="/logo.png" alt="CarRent Logo" width={250} height={50} className=" w-36 lg:w-52"/>
+            <Image
+              src="/logo.png"
+              alt="CarRent Logo"
+              width={250}
+              height={50}
+              className=" w-36 lg:w-52"
+            />
           </div>
 
-          {/* القسم الثاني */}
+          
           <div>
             <h4 className="font-bold mb-4 text-lg">روابط أساسية</h4>
             <ul className="space-y-2 text-gray-400">
@@ -41,7 +39,7 @@ export default function Footer() {
             </ul>
           </div>
 
-          {/* القسم الثالث */}
+       
           <div>
             <h4 className="font-bold mb-4 text-lg">المساعدة</h4>
             <ul className="space-y-2 text-gray-400">
@@ -63,27 +61,27 @@ export default function Footer() {
             </ul>
           </div>
 
-          {/* القسم الرابع - وسائل التواصل */}
+          
           <div>
             <h4 className="font-bold mb-4 text-lg">تواصل معنا</h4>
             <div className="flex items-center gap-4">
-              {/* الهاتف */}
+              
               <div className="flex items-center gap-3 p-2 bg-[#5CE1E6] rounded-full">
                 <FaPhone className="text-white text-lg w-5 h-5" />
                 {/* <span dir="ltr">+966 50 000 0000</span> */}
               </div>
 
-              {/* الإيميل */}
+            
               <div className="flex items-center gap-3 p-2 bg-[#5CE1E6] rounded-full ">
                 <FaEnvelope className="text-white text-lg w-5 h-5" />
                 {/* <span dir="ltr">info@carrent.com</span> */}
               </div>
 
-              {/* الموقع */}
-              <div className="flex items-center gap-3 p-2 bg-[#5CE1E6] rounded-full">
+             
+              {/* <div className="flex items-center gap-3 p-2 bg-[#5CE1E6] rounded-full">
                 <FaMapMarkerAlt className="text-white text-lg w-5 h-5" />
-                {/* <span>الرياض، المملكة العربية السعودية</span> */}
-              </div>
+                <span>الرياض، المملكة العربية السعودية</span>
+              </div> */}
             </div>
           </div>
         </div>

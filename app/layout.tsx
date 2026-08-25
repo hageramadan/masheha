@@ -4,6 +4,7 @@ import "./globals.css";
 import Navbar from "@/src/components/common/Navbar";
 import Footer from "@/src/components/common/Footer";
 import { Toaster } from "react-hot-toast";
+import { AuthProvider } from "@/src/context/AuthContext";
 
 // ✅ تحميل خط Almarai العربي
 const almarai = Almarai({
@@ -17,9 +18,7 @@ export const metadata: Metadata = {
   title: "تأجير السيارات",
   description: "أفضل خدمة لتأجير السيارات في المنطقة",
   icons: {
-    icon: [
-      { url: "/logo.png", type: "image/png" }
-    ],
+    icon: [{ url: "/logo.png", type: "image/png" }],
   },
 };
 
@@ -35,16 +34,12 @@ export default function RootLayout({
       className={`${almarai.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col font-almarai">
-        <Navbar />
-        {children}
-        <Footer />
-        
-        {/* Toaster - يظهر في أعلى المنتصف */}
-        <Toaster
-          position="top-center"
-         
-        
-        />
+        <AuthProvider>
+          <Navbar />
+          {children}
+          <Footer />
+          <Toaster position="top-center" />
+        </AuthProvider>
       </body>
     </html>
   );

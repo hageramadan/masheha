@@ -4,57 +4,76 @@
 import Image from "next/image";
 import { useState, useEffect } from "react";
 import {
-  FaArrowRight,
   FaMapMarkerAlt,
-  FaClock,
-  FaRoad,
   FaCar,
-  FaCalendarAlt,
+  FaCity,
+  FaArrowRight,
+  FaCheckCircle,
+  FaTimesCircle,
   FaCreditCard,
+  FaTimes,
 } from "react-icons/fa";
 import { cn } from "@/src/lib/utils";
+import {
+  getBookingDetails,
+  checkExtension,
+} from "@/src/services/bookingApiService";
+import { BookingDetail } from "@/src/types/api";
+import { PaymentService, PaymentMethodType } from "@/src/services/paymentService";
+import { UpdatePaymentStatusService } from "@/src/services/updatePaymentStatusService";
+import toast from "react-hot-toast";
 import ExtendBooking from "./ExtendBooking";
-import { FaRotateRight } from "react-icons/fa6";
-import { RiArrowRightSLine } from "react-icons/ri";
-import PaymentPopup from './PaymentPopup';
+import PaymentMethodsList from "@/src/components/common/PaymentMethodsList";
 
 interface BookingDetailsProps {
-  booking: {
-    id: number;
-    date: string;
-    price: number;
-    type: string;
-    location: string;
-    kilometers: number;
-    pickupTime: string;
-    status: string;
-    carImage: string;
-    carName: string;
-    pickupLocation: string;
-    dropoffLocation: string;
-    bookingNumber: string;
-    rentalDays?: number;
-    pickupDate?: string;
-    returnDate?: string;
-    deliveryMethod?: string;
-    deliveryNote?: string;
-    subtotal?: number;
-    tax?: number;
-    total?: number;
-  };
+  bookingId: number;
   onBack: () => void;
 }
 
+function formatDate(dateString: string) {
+  try {
+    const date = new Date(dateString);
+    return date.toLocaleDateString("ar-SA", {
+      weekday: "long",
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+    });
+  } catch {
+    return dateString;
+  }
+}
+
+function getPaymentStatusColor(status: string) {
+  return status === "paid"
+    ? "bg-green-100 text-green-700"
+    : "bg-red-100 text-red-700";
+}
+
+function getPaymentStatusLabel(status: string) {
+  return status === "paid" ? "مدفوع" : "غير مدفوع";
+}
+
 export default function BookingDetails({
-  booking,
+  bookingId,
   onBack,
 }: BookingDetailsProps) {
-  const [showExtend, setShowExtend] = useState(false);
-  const [showPaymentPopup, setShowPaymentPopup] = useState(false);
-  const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<string | null>(null);
+  const [booking, setBooking] = useState<BookingDetail | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [isVisible, setIsVisible] = useState(false);
 
-  // أنيميشن عند تحميل المكون
+  const [showPaymentPopup, setShowPaymentPopup] = useState(false);
+  const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<
+    string | null
+  >(null);
+  const [isProcessingPayment, setIsProcessingPayment] = useState(false);
+
+  const [showExtend, setShowExtend] = useState(false);
+  const [canExtend, setCanExtend] = useState(false);
+  const [extensionData, setExtensionData] = useState<any>(null);
+  const [isCheckingExtension, setIsCheckingExtension] = useState(true);
+
   useEffect(() => {
     const timer = setTimeout(() => {
       setIsVisible(true);
@@ -62,276 +81,629 @@ export default function BookingDetails({
     return () => clearTimeout(timer);
   }, []);
 
-  // بيانات افتراضية إذا لم تكن موجودة
-  const rentalDays = booking.rentalDays || 4;
-  const pickupDate = booking.pickupDate || "الاحد، 8 يونيو، 9:30 ص";
-  const returnDate = booking.returnDate || "الخميس، 12 يونيو، 9:30 ص";
-  const deliveryMethod = booking.deliveryMethod || "توصيل الي موقعك الحالي";
-  const deliveryNote =
-    booking.deliveryNote || "Lorem ipsum dolor sit amet consectetur.";
-  const subtotal = booking.subtotal || 440;
-  const tax = booking.tax || 40;
-  const total = booking.total || 115;
+  async function checkExtensionAvailability(bookingId: number) {
+    setIsCheckingExtension(true);
+    try {
+      const data = await checkExtension(bookingId);
+      setCanExtend(data.can_extend);
+      setExtensionData(data);
+    } catch (error) {
+      console.error("Error checking extension:", error);
+      setCanExtend(false);
+    } finally {
+      setIsCheckingExtension(false);
+    }
+  }
 
-  const handleRenew = () => {
+  useEffect(() => {
+    async function fetchBookingDetails() {
+      setLoading(true);
+      setError(null);
+      try {
+        const response = await getBookingDetails(bookingId);
+        if (response.result && response.data) {
+          setBooking(response.data);
+          await checkExtensionAvailability(response.data.id);
+        } else {
+          setError(response.message || "حدث خطأ في جلب تفاصيل الحجز");
+        }
+      } catch (err) {
+        setError("حدث خطأ في الاتصال بالخادم");
+        console.error("Error fetching booking details:", err);
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    if (bookingId) {
+      fetchBookingDetails();
+    }
+  }, [bookingId]);
+
+  const handleRepayment = async () => {
+    if (!selectedPaymentMethod || !booking) return;
+
+    setIsProcessingPayment(true);
+    const token = localStorage.getItem("token");
+    
+    try {
+      if (!token) {
+        toast.error("الرجاء تسجيل الدخول أولاً");
+        return;
+      }
+
+      const paymentMethodId = parseInt(selectedPaymentMethod);
+
+      const updatePending = await UpdatePaymentStatusService.updatePaymentPending(
+        booking.uuid,
+        paymentMethodId,
+        undefined,
+        token
+      );
+
+      if (!updatePending) {
+        toast.error("حدث خطأ في تحديث حالة الدفع");
+        return;
+      }
+
+      const returnUrl = `${window.location.origin}/profile?tab=bookings&booking_id=${booking.id}&payment_status=success&uuid=${booking.uuid}&payment_method_id=${paymentMethodId}`;
+
+      const result = await PaymentService.processPayment(
+        {
+          car_name: booking.car.name,
+          amount: parseFloat(booking.total_amount),
+          uuid: booking.uuid,
+          zip: booking.zip || "12251",
+          address: booking.address || "",
+          city: booking.city || "الرياض",
+          payment_method: paymentMethodId,
+          return_url: returnUrl,
+          booking_id: booking.id,
+        },
+        token
+      );
+
+      if (result.success) {
+        if (result.isCash) {
+          await UpdatePaymentStatusService.updatePaymentSuccess(
+            booking.uuid,
+            paymentMethodId,
+            { payment_type: 'cash' },
+            token
+          );
+
+          toast.success("تم اختيار الدفع النقدي عند الاستلام");
+          setShowPaymentPopup(false);
+          setSelectedPaymentMethod(null);
+          
+          setTimeout(() => {
+            window.location.href = "/profile?tab=bookings";
+          }, 1500);
+          
+        } else if (result.paymentUrl) {
+          window.open(result.paymentUrl, "_blank");
+          toast.success("تم توجيهك لبوابة الدفع");
+          setShowPaymentPopup(false);
+          setSelectedPaymentMethod(null);
+        } else {
+          await UpdatePaymentStatusService.updatePaymentFailed(
+            booking.uuid,
+            paymentMethodId,
+            { error: 'No payment URL received' },
+            token
+          );
+          toast.error("لم يتم استلام رابط الدفع");
+        }
+      } else {
+        await UpdatePaymentStatusService.updatePaymentFailed(
+          booking.uuid,
+          paymentMethodId,
+          { error: result.message },
+          token
+        );
+        toast.error(result.message);
+      }
+    } catch (error: any) {
+      console.error("Error processing payment:", error);
+      
+      if (booking && selectedPaymentMethod) {
+        await UpdatePaymentStatusService.updatePaymentFailed(
+          booking.uuid,
+          parseInt(selectedPaymentMethod),
+          { error: error.message || 'Unexpected error' },
+          token || undefined
+        );
+      }
+      
+      toast.error(error.message || "حدث خطأ أثناء عملية الدفع");
+    } finally {
+      setIsProcessingPayment(false);
+    }
+  };
+
+  const closePaymentPopup = () => {
+    setShowPaymentPopup(false);
+    setSelectedPaymentMethod(null);
+  };
+
+  const handleExtend = () => {
     setShowExtend(true);
   };
 
-  const handlePaymentSelect = (methodId: string) => {
-    setSelectedPaymentMethod(methodId);
-    console.log('تم اختيار طريقة الدفع:', methodId);
-  };
-
-  const handleExtend = (days: number) => {
-    console.log(`تم تمديد الحجز لمدة ${days} يوم`);
+  const handleExtendBack = () => {
     setShowExtend(false);
+    window.location.reload();
   };
 
-  const handleRefund = () => {
-    setShowPaymentPopup(true);
-  };
+  if (loading) {
+    return (
+      <div className="bg-white min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-[#012738] border-r-transparent"></div>
+        </div>
+      </div>
+    );
+  }
 
-  // إذا كان في وضع التمديد
+  if (error || !booking) {
+    return (
+      <div className="bg-white min-h-screen flex items-center justify-center p-4">
+        <div className="text-center">
+          <p className="text-red-500">{error || "لم يتم العثور على الحجز"}</p>
+          <button
+            onClick={onBack}
+            className="mt-4 px-6 py-2 bg-[#012738] text-white rounded-lg hover:bg-[#012738]/90 transition-colors"
+          >
+            العودة إلى القائمة
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   if (showExtend) {
     return (
       <ExtendBooking
-        booking={{
-          id: booking.id,
-          bookingNumber: booking.bookingNumber,
-          carName: booking.carName,
-          returnDate: returnDate,
-          rentalDays: rentalDays,
-        }}
-        onBack={() => setShowExtend(false)}
-        onExtend={handleExtend}
+        bookingId={booking.id}
+        bookingNumber={booking.identification_number}
+        carName={`${booking.car.brand.name} ${booking.car.name}`}
+        returnDate={booking.end_date}
+        rentalDays={booking.total_days}
+        dailyPrice={extensionData?.daily_price || 0}
+        tax={extensionData?.tax || "0"}
+        maxExtensionDays={extensionData?.max_extension_days || 30}
+        onBack={handleExtendBack}
       />
     );
   }
 
+  const isPaymentPending = booking.payment_status !== "paid";
+
   return (
     <div className="bg-white min-h-screen">
-      {/* زر العودة */}
       <button
         onClick={onBack}
         className={cn(
-          "flex items-center text-gray-600 hover:text-[#012738] transition-colors py-2",
+          "flex items-center gap-2 text-gray-600 hover:text-[#012738] transition-colors py-4",
           "transform transition-all duration-500 ease-out",
-          isVisible ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-4"
+          isVisible ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-4",
         )}
       >
-        <RiArrowRightSLine className="text-3xl" />
-        <span className="text-base lg:text-lg text-primary">تفاصيل</span>
+        <FaArrowRight className="text-lg" />
+        <span className="text-base lg:text-lg font-medium">تفاصيل الحجز</span>
       </button>
 
-      {/* بطاقة تفاصيل الحجز */}
       <div
         className={cn(
           "bg-white rounded-2xl shadow-xl p-6 space-y-6",
           "transform transition-all duration-500 ease-out",
-          isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"
+          isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8",
         )}
       >
-        {/* صورة السيارة ومعلوماتها */}
         <div
           className={cn(
-            "flex items-center gap-4 shadow-lg p-2 rounded-2xl",
+            "flex items-center gap-4 shadow-lg p-3 rounded-2xl",
             "transform transition-all duration-500 ease-out",
-            isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"
+            isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8",
           )}
           style={{ transitionDelay: "100ms" }}
         >
-          <div className="w-28 h-24 lg:w-32 lg:h-28 shrink-0 overflow-hidden">
-            <Image
-              src={booking.carImage}
-              alt={booking.carName}
-              width={128}
-              height={112}
-              className="object-contain w-full h-full"
-            />
+          <div className="w-28 h-24 lg:w-32 lg:h-28 shrink-0 overflow-hidden rounded-xl">
+            {booking.car.image ? (
+              <Image
+                src={booking.car.image}
+                alt={booking.car.name}
+                width={128}
+                height={112}
+                className="object-contain w-full h-full"
+                unoptimized
+              />
+            ) : (
+              <div className="w-full h-full flex items-center justify-center text-gray-400">
+                <FaCar className="h-12 w-12" />
+              </div>
+            )}
           </div>
 
-          <div className="flex-1 space-y-1">
-            <div className="flex items-center justify-between">
-              <p className="font-medium text-gray-800 text-base lg:text-lg">
-                {booking.type}
-              </p>
-              <div className="flex items-center gap-1">
-                <span className="text-sm lg:text-xl font-bold text-primary">
-                  {booking.price}
+          <div className="flex-1 space-y-1 min-w-0">
+            <div className="flex items-start justify-between gap-2">
+              <div className="flex-1 min-w-0">
+                <p className="font-medium text-gray-800 text-base lg:text-lg truncate">
+                  {booking.car.brand.name} {booking.car.name}
+                </p>
+                <p className="text-xs text-gray-500">
+                  {booking.car.model_year}
+                </p>
+              </div>
+              <div className="flex items-center gap-1 shrink-0">
+                <span className="text-sm lg:text-xl font-bold text-[#012738]">
+                  {booking.total_amount}
                 </span>
                 <Image
                   src="/images/SAR.png"
-                  alt="sar"
-                  width={30}
-                  height={30}
+                  alt="ريال"
+                  width={20}
+                  height={20}
                   className="w-4 h-4 lg:w-5 lg:h-5"
                 />
               </div>
             </div>
-            <div className="flex items-center gap-2 text-xs text-gray-500 py-1">
-              <FaMapMarkerAlt className="h-3 w-3 lg:h-4 lg:w-4" />
-              <span className="text-sm lg:text-sm">{booking.location}</span>
-            </div>
-            {/* <div className="flex flex-wrap items-center gap-2 py-1">
-              <div className="flex items-center gap-2 text-xs text-gray-500 bg-gray-100 rounded py-1 px-3">
-                <FaClock className="h-3 w-3 lg:h-4 lg:w-4" />
-                <span className="text-sm lg:text-sm">{booking.pickupTime}</span>
+            {booking.delivery_address && (
+              <div className="flex items-center gap-1 text-sm text-gray-600">
+                <p>يتم التوصيل في</p>
+                <span>{booking.address}</span>
               </div>
-              <div className="flex items-center gap-2 text-xs text-gray-500 bg-gray-100 rounded py-1 px-3">
-                <FaRoad className="h-3 w-3 lg:h-4 lg:w-4" />
-                <span className="text-sm lg:text-sm">
-                  الكيلومترات المتاحة {booking.kilometers}
-                </span>
-              </div>
-            </div> */}
+            )}
           </div>
         </div>
 
-        {/* تفاصيل الحجز */}
         <div
           className={cn(
-            "space-y-4 pt-2 bg-[#D2D6DB3D] p-3 rounded-xl",
+            "space-y-4 bg-[#D2D6DB3D] p-4 rounded-xl",
             "transform transition-all duration-500 ease-out",
-            isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"
+            isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8",
           )}
           style={{ transitionDelay: "150ms" }}
         >
-          <h3 className="text-base font-bold text-[#191C1F]">تاريخ الحجز</h3>
+          <h3 className="text-base font-bold text-[#191C1F]">تفاصيل الحجز</h3>
 
-          <div className="grid grid-cols-1 gap-2">
+          <div className="space-y-3">
             <div className="flex items-center justify-between">
-              <p className="text-sm font-bold text-[#4F5352]">مدة الحجز</p>
-              <p className="text-sm font-bold text-primary">{rentalDays} يوم</p>
+              <p className="text-sm font-medium text-[#4F5352]">مدة الحجز</p>
+              <p className="text-sm font-bold text-[#012738]">
+                {booking.total_days} يوم
+              </p>
             </div>
+
             <div className="flex items-center justify-between">
-              <p className="text-sm font-bold text-[#4F5352]">تاريخ الاستلام</p>
-              <p className="text-sm font-bold text-primary">{pickupDate}</p>
+              <p className="text-sm font-medium text-[#4F5352]">
+                تاريخ الاستلام
+              </p>
+              <div className="text-sm font-bold text-[#012738] text-left">
+                <p>{formatDate(booking.start_date)}</p>
+              </div>
             </div>
+
             <div className="flex items-center justify-between">
-              <p className="text-sm font-bold text-[#4F5352]">تاريخ الإرجاع</p>
-              <p className="text-sm font-bold text-primary">{returnDate}</p>
+              <p className="text-sm font-medium text-[#4F5352]">
+                تاريخ الإرجاع
+              </p>
+              <div className="text-sm font-bold text-[#012738] text-left">
+                <p>{formatDate(booking.end_date)}</p>
+              </div>
             </div>
           </div>
-          <p className="italic text-sm text-[#4F5352]">
+
+          <p className="italic text-xs text-[#4F5352] border-t border-gray-200 pt-3">
             يتوجب على المستأجر إعادة السيارة أو طلب تمديد الحجز لتجنب فرض أي
             رسوم إضافية
           </p>
         </div>
 
-        {/* طريقة الاستلام */}
         <div
           className={cn(
-            "space-y-2 pt-4 border-t border-gray-100",
+            "space-y-3 bg-[#D2D6DB3D] p-4 rounded-xl",
             "transform transition-all duration-500 ease-out",
-            isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"
-          )}
-          style={{ transitionDelay: "200ms" }}
-        >
-          <h3 className="text-base font-bold text-[#191C1F]">طريقة الاستلام</h3>
-          <div className="flex items-start gap-3 bg-[#D2D6DB3D] p-3 rounded-xl">
-            <FaMapMarkerAlt className="h-5 w-5 text-primary mt-0.5" />
-            <div>
-              <p className="font-medium text-gray-800">{deliveryMethod}</p>
-              <p className="text-sm text-gray-500">{deliveryNote}</p>
-            </div>
-          </div>
-        </div>
-
-        {/* تفاصيل الدفع */}
-        <div
-          className={cn(
-            "space-y-3 pt-4 border-t border-gray-100",
-            "transform transition-all duration-500 ease-out",
-            isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"
+            isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8",
           )}
           style={{ transitionDelay: "250ms" }}
         >
+          <h3 className="text-base font-bold text-[#191C1F]">طريقة الاستلام</h3>
+          <div className="space-y-2">
+            <div className="flex items-start gap-3">
+              <FaMapMarkerAlt className="h-4 w-4 text-[#012738] mt-0.5" />
+              <div>
+                <p className="font-medium text-gray-800">
+                  {booking.delivery_type === "to_location"
+                    ? "توصيل إلى الموقع"
+                    : "استلام من الفرع"}
+                </p>
+                {booking.delivery_address && (
+                  <p className="text-sm text-gray-500">
+                    {booking.delivery_address}
+                  </p>
+                )}
+                {booking.address && (
+                  <p className="text-sm text-gray-500">
+                    العنوان: {booking.address}
+                  </p>
+                )}
+                <div className="flex items-center gap-2 text-sm text-gray-500 mt-1">
+                  <FaCity className="h-3 w-3" />
+                  <span>المدينة: {booking.city}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div
+          className={cn(
+            "space-y-3 bg-[#D2D6DB3D] p-4 rounded-xl",
+            "transform transition-all duration-500 ease-out",
+            isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8",
+          )}
+          style={{ transitionDelay: "300ms" }}
+        >
           <h3 className="text-base font-bold text-[#191C1F]">تفاصيل الدفع</h3>
 
-          <div className="space-y-4">
+          <div className="space-y-3">
             <div className="flex justify-between text-sm">
-              <span className="text-gray-500">
-                اجمالي سعر الايجار لمدة {rentalDays} ايام
-              </span>
+              <span className="text-gray-600">السعر الأساسي</span>
               <div className="flex items-center gap-1">
-                <span className="text-sm lg:text-base text-[#717182] font-bold">
-                  {subtotal}
+                <span className="font-bold text-gray-800">
+                  {booking.price_breakdown.base_price}
                 </span>
                 <Image
                   src="/images/SAR.png"
-                  alt="sar"
-                  width={30}
-                  height={30}
-                  className="w-4 h-4 lg:w-5 lg:h-5"
+                  alt="ريال"
+                  width={16}
+                  height={16}
+                  className="w-3 h-3"
                 />
               </div>
             </div>
+
+            {parseFloat(booking.discount_amount) > 0 && (
+              <div className="flex justify-between text-sm">
+                <span className="text-gray-600">الخصم</span>
+                <div className="flex items-center gap-1 text-green-600">
+                  <span className="font-bold">-{booking.discount_amount}</span>
+                  <Image
+                    src="/images/SAR.png"
+                    alt="ريال"
+                    width={16}
+                    height={16}
+                    className="w-3 h-3"
+                  />
+                </div>
+              </div>
+            )}
+
             <div className="flex justify-between text-sm">
-              <span className="text-gray-500">الضريبة</span>
+              <span className="text-gray-600">الضريبة</span>
               <div className="flex items-center gap-1">
-                <span className="text-sm lg:text-base text-[#717182] font-bold">
-                  {tax}
+                <span className="font-bold text-gray-800">
+                  {booking.price_breakdown.tax}
                 </span>
                 <Image
                   src="/images/SAR.png"
-                  alt="sar"
-                  width={30}
-                  height={30}
-                  className="w-4 h-4 lg:w-5 lg:h-5"
+                  alt="ريال"
+                  width={16}
+                  height={16}
+                  className="w-3 h-3"
                 />
               </div>
             </div>
-            <div className="flex justify-between text-lg font-bold pt-2 border-t border-gray-100">
+
+            {parseFloat(booking.additional_services_total_price) > 0 && (
+              <div className="flex justify-between text-sm">
+                <span className="text-gray-600">الخدمات الإضافية</span>
+                <div className="flex items-center gap-1">
+                  <span className="font-bold text-gray-800">
+                    {booking.additional_services_total_price}
+                  </span>
+                  <Image
+                    src="/images/SAR.png"
+                    alt="ريال"
+                    width={16}
+                    height={16}
+                    className="w-3 h-3"
+                  />
+                </div>
+              </div>
+            )}
+
+            <div className="flex justify-between text-base font-bold pt-2 border-t border-gray-200">
               <span>الإجمالي</span>
               <div className="flex items-center gap-1">
-                <span className="text-sm lg:text-xl font-bold text-primary">
-                  {total}
+                <span className="text-lg text-[#012738]">
+                  {booking.price_breakdown.total}
                 </span>
                 <Image
                   src="/images/SAR.png"
-                  alt="sar"
-                  width={30}
-                  height={30}
-                  className="w-4 h-4 lg:w-5 lg:h-5"
+                  alt="ريال"
+                  width={20}
+                  height={20}
+                  className="w-4 h-4"
                 />
               </div>
             </div>
           </div>
         </div>
 
-        {/* أزرار الإجراءات */}
         <div
           className={cn(
-            "flex flex-col sm:flex-row gap-3 pt-4 border-t border-gray-100",
+            "flex items-center justify-between gap-3 p-3 rounded-xl bg-[#D2D6DB3D]",
             "transform transition-all duration-500 ease-out",
-            isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"
+            isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8",
           )}
-          style={{ transitionDelay: "300ms" }}
+          style={{ transitionDelay: "350ms" }}
         >
-          <button
-            onClick={handleRenew}
-            className="flex-1 flex items-center justify-center gap-2 px-6 py-3 bg-[#012738] text-white rounded-xl hover:bg-[#012738]/90 transition-all hover:scale-[1.02]"
-          >
-            <FaRotateRight className="h-4 w-4" />
-            <span className="font-medium">تمديد الحجز</span>
-          </button>
-          <button
-            onClick={handleRefund}
-            className="flex-1 flex items-center justify-center gap-2 px-6 py-3 bg-white text-[#012738] border-2 border-[#012738] rounded-xl hover:bg-[#012738]/5 transition-all hover:scale-[1.02]"
-          >
-            <FaCreditCard className="h-4 w-4" />
-            <span className="font-medium">إعادة الدفع</span>
-          </button>
+          <div>
+            <p className="text-sm lg:text-base font-bold text-gray-800">
+              حالة الدفع
+            </p>
+            <div
+              className={`flex items-center justify-start gap-1 mt-1 ${getPaymentStatusColor(booking.payment_status)} px-2 py-1 rounded-full text-xs font-medium`}
+            >
+              {booking.payment_status === "paid" ? (
+                <FaCheckCircle className="h-4 w-4" />
+              ) : (
+                <FaTimesCircle className="h-4 w-4" />
+              )}
+              <span className="text-sm">
+                {getPaymentStatusLabel(booking.payment_status)}
+              </span>
+            </div>
+          </div>
+          {isPaymentPending && (
+            <div className="flex items-end">
+              <button
+                onClick={() => setShowPaymentPopup(true)}
+                className="w-fit flex items-center justify-center gap-2 px-4 py-2 bg-[#012738] text-white rounded-xl hover:bg-[#012738]/90 transition-all hover:scale-[1.02] text-sm"
+              >
+                <FaCreditCard className="h-4 w-4" />
+                <span className="font-medium">إعادة الدفع</span>
+              </button>
+            </div>
+          )}
         </div>
 
-        {/* Payment Popup */}
-        <PaymentPopup
-          isOpen={showPaymentPopup}
-          onClose={() => setShowPaymentPopup(false)}
-          onSelect={handlePaymentSelect}
-          selectedMethod={selectedPaymentMethod}
-        />
+        {!isCheckingExtension && canExtend && (
+          <div
+            className={cn(
+              "pt-2",
+              "transform transition-all duration-500 ease-out",
+              isVisible
+                ? "opacity-100 translate-y-0"
+                : "opacity-0 translate-y-8",
+            )}
+            style={{ transitionDelay: "400ms" }}
+          >
+            <button
+              onClick={handleExtend}
+              className="w-full flex items-center justify-center gap-2 px-6 py-3 bg-primary text-white rounded-xl transition-all hover:scale-[1.02]"
+            >
+              <span className="font-medium">تمديد الحجز</span>
+            </button>
+
+            {extensionData && (
+              <div className="flex items-center justify-center gap-2 mt-2 text-xs text-gray-500 text-center">
+                يمكنك التمديد حتى {extensionData.max_extension_days} يوم إضافي
+                {extensionData.daily_price && (
+                  <div className="flex items-center gap-1">
+                    <span>
+                      | السعر اليومي:
+                      {extensionData.daily_price}
+                    </span>
+                    <Image
+                      src="/images/SAR.png"
+                      alt="ريال"
+                      width={20}
+                      height={20}
+                      className="w-3 h-3"
+                    />
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        )}
+
+        {!isCheckingExtension &&
+          !canExtend &&
+          booking.status !== "completed" && (
+            <div
+              className={cn(
+                "pt-2",
+                "transform transition-all duration-500 ease-out",
+                isVisible
+                  ? "opacity-100 translate-y-0"
+                  : "opacity-0 translate-y-8",
+              )}
+              style={{ transitionDelay: "400ms" }}
+            >
+              <div className="text-center text-sm text-gray-500 bg-gray-50 p-3 rounded-xl">
+                <p> لا يمكن تمديد هذا الحجز في الوقت الحالي</p>
+              </div>
+            </div>
+          )}
       </div>
+
+      {showPaymentPopup && (
+        <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="bg-white rounded-t-3xl w-full max-w-md max-h-[90vh] overflow-y-auto animate-slide-up">
+            <div className="flex items-center justify-between p-4 border-b sticky top-0 bg-white z-10 rounded-t-3xl">
+              <h3 className="text-lg font-bold">اختر طريقة الدفع</h3>
+              <button
+                onClick={closePaymentPopup}
+                className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+                disabled={isProcessingPayment}
+              >
+                <FaTimes className="h-5 w-5" />
+              </button>
+            </div>
+
+            <div className="p-4">
+              <PaymentMethodsList
+                selectedMethod={selectedPaymentMethod}
+                onSelect={setSelectedPaymentMethod}
+                rentalType="يومي"
+              />
+            </div>
+
+            <div className="p-4 border-t sticky bottom-0 bg-white">
+              <button
+                onClick={handleRepayment}
+                disabled={!selectedPaymentMethod || isProcessingPayment}
+                className={cn(
+                  "w-full py-3 rounded-xl text-white font-bold transition-all",
+                  selectedPaymentMethod && !isProcessingPayment
+                    ? "bg-[#012738] hover:bg-[#012738]/90 hover:scale-[1.02]"
+                    : "bg-gray-300 cursor-not-allowed",
+                )}
+              >
+                {isProcessingPayment ? (
+                  <span className="flex items-center justify-center gap-2">
+                    <span className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+                    جاري المعالجة...
+                  </span>
+                ) : (
+                  "تأكيد الدفع"
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <style jsx>{`
+        @keyframes slide-up {
+          from {
+            transform: translateY(100%);
+            opacity: 0;
+          }
+          to {
+            transform: translateY(0);
+            opacity: 1;
+          }
+        }
+        .animate-slide-up {
+          animation: slide-up 0.3s ease-out forwards;
+        }
+        .animate-in {
+          animation: fade-in 0.2s ease-out forwards;
+        }
+        @keyframes fade-in {
+          from {
+            opacity: 0;
+          }
+          to {
+            opacity: 1;
+          }
+        }
+      `}</style>
     </div>
   );
 }

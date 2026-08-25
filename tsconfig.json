@@ -29,6 +29,7 @@
     ".next/types/**/*.ts",
     ".next/dev/types/**/*.ts",
     "**/*.mts"
-, "src/components/common/Navbar.jsx"  ],
-  "exclude": ["node_modules"]
+, "src/components/common/Navbar.tsx"  ],
+  "exclude": ["node_modules"],
+   "types": ["google.maps", "node"]
 }

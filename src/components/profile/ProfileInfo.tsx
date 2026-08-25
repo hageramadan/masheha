@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+
 // src/components/profile/ProfileInfo.tsx
 "use client";
 
@@ -7,20 +9,52 @@ import {
   FaUserCircle,
   FaTimes,
   FaCheck,
+  FaSpinner,
 } from "react-icons/fa";
 import { cn } from "@/src/lib/utils";
 import PhoneInput from "../contact/PhoneInput";
 import toast from "react-hot-toast";
 import { useRouter } from "next/navigation";
+import { useAuth } from "@/src/context/AuthContext";
 
 export default function ProfileInfo() {
   const router = useRouter();
+  const { user, getUserProfile, updateProfile, logout } = useAuth();
+  
   const [fullName, setFullName] = useState("");
   const [phoneNumber, setPhoneNumber] = useState("");
   const [countryCode, setCountryCode] = useState("+966");
   const [isEditing, setIsEditing] = useState(false);
   const [isVisible, setIsVisible] = useState(false);
   const [showLogoutPopup, setShowLogoutPopup] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
+
+  // جلب بيانات المستخدم عند تحميل المكون
+  useEffect(() => {
+    const fetchUserData = async () => {
+      try {
+        setIsLoading(true);
+        await getUserProfile();
+      } catch (error) {
+        console.error("Error fetching user data:", error);
+        toast.error("حدث خطأ في جلب بيانات المستخدم");
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchUserData();
+  }, []);
+
+  // تحديث الحقول عند تغيير بيانات المستخدم
+  useEffect(() => {
+    if (user) {
+      setFullName(user.name || "");
+      setPhoneNumber(user.phone || "");
+      setCountryCode(user.country_code || "+966");
+    }
+  }, [user]);
 
   // أنيميشن عند تحميل المكون
   useEffect(() => {
@@ -30,46 +64,40 @@ export default function ProfileInfo() {
     return () => clearTimeout(timer);
   }, []);
 
-  const handleSave = () => {
-    setIsEditing(false);
-    // هنا يمكن إضافة منطق حفظ البيانات
-    console.log("تم حفظ البيانات", { fullName, phoneNumber, countryCode });
-    
-    // إظهار توستر نجاح
-    toast.success("تم حفظ البيانات بنجاح", {
-      duration: 3000,
-      position: "top-center",
-      style: {
-        background: "#10B981",
-        color: "#fff",
-        padding: "16px",
-        borderRadius: "12px",
-        fontSize: "16px",
-      },
-      icon: "✅",
-    });
+  const handleSave = async () => {
+    if (!fullName.trim()) {
+      toast.error(" يرجى إدخال الاسم");
+      return;
+    }
+
+    if (!phoneNumber || phoneNumber.length < 8) {
+      toast.error(" يرجى إدخال رقم هاتف صحيح");
+      return;
+    }
+
+    setIsSaving(true);
+    try {
+      await updateProfile({
+        name: fullName.trim(),
+        phone: phoneNumber,
+        country_code: countryCode,
+      });
+      setIsEditing(false);
+    } catch (error: any) {
+      toast.error(error.message || "حدث خطأ أثناء حفظ البيانات");
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const handleLogout = () => {
     setShowLogoutPopup(true);
   };
 
-  const confirmLogout = () => {
+  const confirmLogout = async () => {
     setShowLogoutPopup(false);
-    // هنا يمكن إضافة منطق تسجيل الخروج
-    console.log("تم تسجيل الخروج");
-    
-    // إظهار توستر نجاح تسجيل الخروج
-    toast.success("تم تسجيل الخروج بنجاح", {
-      duration: 2000,
-      position: "top-center",
-    
-    });
-    
-    // تأخير بسيط ثم الانتقال إلى الصفحة الرئيسية
-    setTimeout(() => {
-      router.push("/");
-    }, 1000);
+    await logout();
+    router.push("/");
   };
 
   const cancelLogout = () => {
@@ -80,6 +108,20 @@ export default function ProfileInfo() {
     setPhoneNumber(phone);
     setCountryCode(code);
   };
+
+ 
+  if (isLoading) {
+    return (
+      <div className="bg-white rounded-2xl border p-6 space-y-6">
+        <div className="flex items-center justify-center py-12">
+          <div className="flex flex-col items-center gap-4">
+            <FaSpinner className="w-8 h-8 text-primary animate-spin" />
+           
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <>
@@ -114,6 +156,7 @@ export default function ProfileInfo() {
                   : "border-gray-200 bg-gray-50 text-gray-600"
               )}
               placeholder="الاسم"
+              disabled={!isEditing}
             />
           </div>
         </div>
@@ -135,18 +178,21 @@ export default function ProfileInfo() {
               value={phoneNumber}
               onChange={handlePhoneChange}
               required={true}
+            
             />
           </div>
         </div>
 
-        {/* تسجيل الخروج */}
+        {/* أزرار التحكم */}
         <div
           className={cn(
+            "flex flex-col sm:flex-row items-center justify-between gap-4 pt-2",
             "transform transition-all duration-500 ease-out",
             isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"
           )}
           style={{ transitionDelay: "200ms" }}
         >
+          {/* زر تسجيل الخروج */}
           <button
             type="button"
             onClick={handleLogout}
@@ -155,26 +201,55 @@ export default function ProfileInfo() {
             <FaSignOutAlt className="h-4 w-4" />
             تسجيل الخروج
           </button>
-        </div>
 
-        {/* زر حفظ */}
-        <div
-          className={cn(
-            "flex items-center justify-end pt-2",
-            "transform transition-all duration-500 ease-out",
-            isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"
-          )}
-          style={{ transitionDelay: "250ms" }}
-        >
-          <button
-            type="button"
-            onClick={handleSave}
-            className={cn(
-              "w-full lg:w-2xs px-4 py-3 text-sm font-medium text-white rounded-lg bg-primary transition-all hover:bg-primary/90 hover:scale-[1.02]"
+          {/* أزرار التعديل والحفظ */}
+          <div className="flex items-center gap-3">
+            {isEditing ? (
+              <>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsEditing(false);
+                    // إعادة تعيين القيم للقيم الأصلية
+                    if (user) {
+                      setFullName(user.name || "");
+                      setPhoneNumber(user.phone || "");
+                      setCountryCode(user.country_code || "+966");
+                    }
+                  }}
+                  className="px-4 py-2 text-sm font-medium text-gray-600 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
+                >
+                  إلغاء
+                </button>
+                <button
+                  type="button"
+                  onClick={handleSave}
+                  disabled={isSaving}
+                  className={cn(
+                    "flex items-center gap-2 px-6 py-2 text-sm font-medium text-white rounded-lg bg-primary transition-all hover:bg-primary/90 hover:scale-[1.02]",
+                    isSaving && "opacity-70 cursor-not-allowed"
+                  )}
+                >
+                  {isSaving ? (
+                    <>
+                      <FaSpinner className="w-4 h-4 animate-spin" />
+                      جاري الحفظ...
+                    </>
+                  ) : (
+                    "حفظ"
+                  )}
+                </button>
+              </>
+            ) : (
+              <button
+                type="button"
+                onClick={() => setIsEditing(true)}
+                className="flex items-center gap-2 px-6 py-2 text-sm font-medium text-primary bg-primary/10 rounded-lg hover:bg-primary/20 transition-colors"
+              >
+                تعديل
+              </button>
             )}
-          >
-            <span className="text-bold text-base lg:text-lg">حفظ</span>
-          </button>
+          </div>
         </div>
       </div>
 

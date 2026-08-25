@@ -1,6 +1,7 @@
 // ============================================
 // TYPES
 // ============================================
+/* eslint-disable @typescript-eslint/no-explicit-any */
 
 export interface Car {
   id: string;
@@ -111,13 +112,24 @@ export interface BookingData {
   selectedServices: string[]; // IDs of selected services
   
   // Payment
-  selectedPaymentMethod: string | null;
+  selectedPaymentMethod: string ;
   paymentMethodType?: 'visa' | 'mastercard' | 'mada' | 'apple_pay' | 'tabby' | 'tamara';
   
   // Calculated
   subtotal: number;
   tax: number;
   total: number;
+   pickupLat?: number;      
+  pickupLng?: number;
+   carId?: string;
+  totalAmount?: number;
+  priceData?: any;
+  uuid?: string;
+  city?: string;
+  zip?: string;
+  insuranceTypeId?: number;
+  paymentMethodIndex?: number;
+   periodId?: number | null;
 }
 
 export interface BookingFormState {
@@ -229,4 +241,61 @@ export interface DeliveryLocation {
     lng: number;
   };
   isAvailable?: boolean;
+}
+export interface BookingRequest {
+  category_id: number;
+  zip: string;
+  delivery_latitude: number;
+  rental_company_id: number;
+  start_time: string;
+  city: string;
+  booking_type: 'daily' | 'monthly';
+  delivery_longitude: number;
+  additional_services?: number[];
+  uuid: string;
+  delivery_type: string;
+  total_days: number;
+  car_id: number;
+  payment_method_id: number;
+  index: number;
+  start_date: string;
+  delivery_address: string;
+  insurance_type_id?: number;
+  address: string;
+  amount: number;
+}
+export interface BookingResponse {
+  id: number;
+  payment_url?: string;
+  [key: string]: any;
+}
+
+
+export interface CreateBookingRequest {
+  category_id: number;
+  zip: string;
+  delivery_latitude: number;
+  rental_company_id: number;
+  start_time: string;
+  city: string;
+  booking_type: 'daily' | 'monthly';
+  delivery_longitude: number;
+  additional_services?: number[];
+  uuid: string;
+  delivery_type: 'to_location' | 'from_location';
+  total_days: number;
+  car_id: number;
+  payment_method_id: number;
+  index: number;
+  start_date: string;
+  delivery_address: string;
+  insurance_type_id?: number;
+  address: string;
+  amount: number;
+}
+
+export interface CreateBookingResponse {
+  id: number;
+  payment_url?: string;
+  status: string;
 }

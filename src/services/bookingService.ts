@@ -1,50 +1,122 @@
-import { Car, AdditionalService, PaymentMethod, BookingData } from '@/src/types/booking';
+
+/* eslint-disable @typescript-eslint/no-explicit-any */
+import { Car, AdditionalService, PaymentMethod, BookingData, CreateBookingRequest } from '@/src/types/booking';
 import { mockCar } from '@/src/data/mock/mockCar';
 import { mockServices, mockPaymentMethods } from '@/src/data/mock/mockServices';
-
-// ============================================
-// SERVICE LAYER - API Ready
-// ============================================
+import { CarService } from './carService';
+import { CheckoutRequest } from '../types/api';
 
 export class BookingService {
   
-  // ---- Car ----
   static async getCarById(id: string): Promise<Car> {
-    // TODO: استبدال بـ API لاحقاً
     return Promise.resolve({ ...mockCar, id });
   }
 
-  // ---- Services ----
   static async getServices(): Promise<AdditionalService[]> {
-    // TODO: استبدال بـ API لاحقاً
     return Promise.resolve(mockServices);
   }
 
-  // ---- Payment Methods ----
   static async getPaymentMethods(): Promise<PaymentMethod[]> {
-    // TODO: استبدال بـ API لاحقاً
     return Promise.resolve(mockPaymentMethods);
   }
 
-  // ---- Submit Booking ----
-  static async submitBooking(data: BookingData): Promise<{ success: boolean; message: string; bookingId?: string }> {
-    // TODO: استبدال بـ API لاحقاً
-    console.log('📦 Booking Data:', data);
+
+// src/services/bookingService.ts
+
+static async submitBooking(
+  data: BookingData,
+  carData: any,
+  rentalType: 'daily' | 'monthly',
+  token: string
+): Promise<{ 
+  success: boolean; 
+  message: string; 
+  bookingId?: string; 
+  paymentUrl?: string;
+  uuid?: string;
+  zip?: string;
+}> {
+  try {
+  
+    const paymentMethodId = parseInt(data.selectedPaymentMethod) || 0;
     
-    // محاكاة تأخير الشبكة
-    await new Promise(resolve => setTimeout(resolve, 1500));
+  
+    const paymentMethods = await CarService.getPaymentMethods();
     
+   
+    const index = paymentMethods.findIndex(
+      (method) => method.id === paymentMethodId
+    );
+    
+   
+    const finalIndex = index !== -1 ? index : 1;
+
+    let insuranceTypeId = 4;
+    
+    if (carData?.insuranceTypeId) {
+      insuranceTypeId = carData.insuranceTypeId;
+      console.log('✅ Insurance Type ID from carData.insuranceTypeId:', insuranceTypeId);
+    }
+    else if (carData?.office?.insurance_types?.length > 0) {
+      insuranceTypeId = carData.office.insurance_types[0].id;
+      console.log('✅ Insurance Type ID from office.insurance_types:', insuranceTypeId);
+    }
+    else if (data?.insuranceTypeId) {
+      insuranceTypeId = data.insuranceTypeId;
+      console.log('✅ Insurance Type ID from data.insuranceTypeId:', insuranceTypeId);
+    }
+
+    const bookingParams: CreateBookingRequest = {
+      category_id: carData?.categoryId || 1,
+      zip: data.zip || '12251',
+      delivery_latitude: data.pickupLat || 24.7136,
+      rental_company_id: carData?.providerId || carData?.office?.id || 0,
+      start_time: data.rentalTime || '16:00',
+      city: data.city || 'الرياض',
+      booking_type: rentalType,
+      delivery_longitude: data.pickupLng || 46.6953,
+      additional_services: data.selectedServices?.map(id => parseInt(id)) || [],
+      uuid: data.uuid || crypto.randomUUID(),
+      delivery_type: 'to_location',
+      total_days: data.rentalDays || 1,
+      car_id: parseInt(data.carId || '0'),
+      payment_method_id: paymentMethodId,
+      index: finalIndex,
+      start_date: data.rentalDate || '',
+      delivery_address: data.pickupAddress || '',
+      insurance_type_id: insuranceTypeId, 
+      address: data.pickupAddress || '',
+      amount: data.totalAmount || 0,
+    };
+
+    Object.keys(bookingParams).forEach(key => {
+      if (bookingParams[key as keyof CreateBookingRequest] === undefined) {
+        delete bookingParams[key as keyof CreateBookingRequest];
+      }
+    });
+
+    const response = await CarService.createBooking(bookingParams, token);
+
     return {
       success: true,
-      message: 'تم حجز السيارة بنجاح!',
-      bookingId: `booking-${Date.now()}`,
+      message: 'تم  الحجز بنجاح!',
+      bookingId: String(response.id),
+      paymentUrl: response.payment_url,
+      uuid: data.uuid,
+      zip: data.zip,
+    };
+  } catch (error: any) {
+    console.error('Error submitting booking:', error);
+    return {
+      success: false,
+      message: error.message || 'حدث خطأ أثناء الحجز',
     };
   }
+}
 
-  // ---- Validate License File ----
   static validateLicenseFile(file: File): { isValid: boolean; error?: string } {
     const allowedTypes = ['application/pdf', 'image/png', 'image/jpeg', 'image/jpg'];
-    const maxSize = 5 * 1024 * 1024; // 5 MB
+    const maxSize = 5 * 1024 * 1024;
 
     if (!allowedTypes.includes(file.type)) {
       return { isValid: false, error: 'يجب أن يكون الملف PDF, PNG, أو JPG' };
@@ -56,4 +128,64 @@ export class BookingService {
 
     return { isValid: true };
   }
+
+
+// src/services/bookingService.ts
+
+static async processPayment(
+  bookingData: {
+    carName: string;
+    amount: number;
+    paymentMethodId: number;
+    uuid: string;
+    zip: string;
+    address: string;
+    city: string;
+    index: number;
+  },
+  token: string
+): Promise<{ success: boolean; message: string; paymentUrl?: string; paymentData?: any }> {
+  try {
+    console.log('📤 processPayment called with:', bookingData);
+    
+    const checkoutParams: CheckoutRequest = {
+      car_name: bookingData.carName,
+      amount: bookingData.amount,
+      index: bookingData.index,
+      uuid: bookingData.uuid,
+      zip: bookingData.zip || '12251',
+      payment_method: bookingData.paymentMethodId,
+      address: bookingData.address,
+      city: bookingData.city || 'الرياض',
+    };
+
+    console.log('📤 Processing payment:', checkoutParams);
+
+    const response = await CarService.checkout(checkoutParams, token);
+    
+    console.log('📥 Checkout response in processPayment:', response);
+
+    // ✅ تحقق من وجود رابط الدفع
+    if (!response.payment_url) {
+      console.error('❌ No payment URL in response:', response);
+      return {
+        success: false,
+        message: 'لم يتم استلام رابط الدفع من الخادم',
+      };
+    }
+
+    return {
+      success: true,
+      message: 'تم توجيهك إلى بوابة الدفع',
+      paymentUrl: response.payment_url,
+      paymentData: response.payment_data,
+    };
+  } catch (error: any) {
+    console.error('❌ Error in processPayment:', error);
+    return {
+      success: false,
+      message: error.message || 'حدث خطأ أثناء عملية الدفع',
+    };
+  }
+}
 }

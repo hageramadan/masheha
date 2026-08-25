@@ -1,16 +1,19 @@
 "use client";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { FaBars, FaTimes, FaUser, FaUserPlus } from "react-icons/fa";
+import { FaBars, FaTimes } from "react-icons/fa";
+import { BiUser } from "react-icons/bi";
 import { useState, useEffect } from "react";
 import Image from "next/image";
 import AuthPopup from "@/src/components/common/AuthPopup";
+import { useAuth } from "@/src/context/AuthContext";
 
 export default function Navbar() {
+  const {isAuthenticated } = useAuth();
   const [isOpen, setIsOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const [showAuthPopup, setShowAuthPopup] = useState(false);
-  const [authMode, setAuthMode] = useState('login'); // ✅ إزالة TypeScript
+  const [authMode, setAuthMode] = useState<'login' | 'register'>('login');
   const pathname = usePathname();
 
   useEffect(() => {
@@ -36,20 +39,22 @@ export default function Navbar() {
     setIsOpen(false);
   };
 
-  const openAuthPopup = (mode) => { // ✅ إزالة TypeScript
+  const openAuthPopup = (mode: 'login' | 'register') => {
     setAuthMode(mode);
     setShowAuthPopup(true);
     setIsOpen(false);
   };
 
+ 
+
   const navLinks = [
     { href: "/", label: "الرئيسية" },
     { href: "/cars", label: "السيارات" },
     { href: "/#", label: "انضم الينا" },
-    { href: "/profile", label: "الملف الشخصي" },
+    // { href: "/profile", label: "الملف الشخصي" },
   ];
 
-  const isActive = (path) => {
+  const isActive = (path: string) => {
     if (path === "/") {
       return pathname === path;
     }
@@ -78,7 +83,7 @@ export default function Navbar() {
                 alt="Logo"
                 width={155}
                 height={72}
-                className="max-w-[120px] md:max-w-[155px] max-h-[50px] md:max-h-[72px] object-contain"
+                className="max-w-30 md:max-w-38.75 max-h-12.5 md:max-h-18 object-contain"
                 priority
               />
             </Link>
@@ -103,25 +108,40 @@ export default function Navbar() {
               ))}
             </div>
 
-            {/* أزرار الديسكتوب */}
+            {/* أزرار الديسكتوب - تعتمد على حالة المستخدم */}
             <div className="hidden lg:flex gap-3 xl:gap-4 items-center">
-              <button
-                onClick={() => openAuthPopup('login')}
-                className="group flex items-center gap-2 border-2 border-primary/20 hover:border-primary py-2 px-5 xl:px-7 rounded-xl font-bold text-sm xl:text-base text-primary hover:bg-primary/5 transition-all duration-300 hover:scale-105 hover:shadow-md"
-              >
-                {/* <FaUser className="text-sm group-hover:scale-110 transition-transform" /> */}
-                الدخول
-              </button>
-              <button
-                onClick={() => openAuthPopup('register')}
-                className="group flex items-center gap-2 bg-primary hover:bg-primary/85 font-bold text-sm xl:text-base py-2.5 xl:py-3 px-5 xl:px-7 text-white rounded-xl transition-all duration-300 hover:scale-105 hover:shadow-lg hover:shadow-primary/30"
-              >
-                {/* <FaUserPlus className="text-sm group-hover:scale-110 transition-transform" /> */}
-                انشاء حساب
-              </button>
+              {isAuthenticated ? (
+               
+                <div className="flex items-center gap-3 border rounded-full p-1 border-gray-400 hover:shadow-xl hover:scale-110 transition duration-150">
+                  <Link
+                    href="/profile"
+                    className="flex items-center gap-2 text-gray-700 hover:text-primary transition-colors duration-300"
+                  >
+                    <BiUser className="text-2xl text-primary" />
+                    
+                  </Link>
+                 
+                </div>
+              ) : (
+               
+                <>
+                  <button
+                    onClick={() => openAuthPopup('login')}
+                    className="group flex items-center gap-2 border-2 border-primary/20 hover:border-primary py-2 px-5 xl:px-7 rounded-xl font-bold text-sm xl:text-base text-primary hover:bg-primary/5 transition-all duration-300 hover:scale-105 hover:shadow-md"
+                  >
+                    الدخول
+                  </button>
+                  <button
+                    onClick={() => openAuthPopup('register')}
+                    className="group flex items-center gap-2 bg-primary hover:bg-primary/85 font-bold text-sm xl:text-base py-2.5 xl:py-3 px-5 xl:px-7 text-white rounded-xl transition-all duration-300 hover:scale-105 hover:shadow-lg hover:shadow-primary/30"
+                  >
+                    انشاء حساب
+                  </button>
+                </>
+              )}
             </div>
 
-            {/* زر القائمة للجوال */}
+          
             <button
               className="lg:hidden text-2xl text-primary p-2 hover:bg-primary/5 rounded-lg transition-colors duration-300 relative z-50"
               onClick={() => setIsOpen(!isOpen)}
@@ -133,9 +153,9 @@ export default function Navbar() {
         </div>
       </nav>
 
-      {/* القائمة المنسدلة للجوال */}
+ 
       <div
-        className={`lg:hidden fixed inset-0 top-[64px] md:top-[80px] z-40 transition-all duration-500 ease-in-out ${
+        className={`lg:hidden fixed inset-0 top-16 md:top-20 z-40 transition-all duration-500 ease-in-out ${
           isOpen
             ? "opacity-100 translate-x-0 pointer-events-auto"
             : "opacity-0 translate-x-full pointer-events-none"
@@ -170,22 +190,38 @@ export default function Navbar() {
               ))}
             </div>
 
-            {/* أزرار الجوال */}
+          
             <div className="flex flex-col gap-4 mt-6">
-              <button
-                onClick={() => openAuthPopup('login')}
-                className="group flex items-center justify-center gap-3 border-2 border-primary/30 hover:border-primary py-4 rounded-xl font-bold text-lg text-primary hover:bg-primary/5 transition-all duration-300 hover:scale-[1.02] w-full"
-              >
-                {/* <FaUser className="group-hover:scale-110 transition-transform" /> */}
-                الدخول
-              </button>
-              <button
-                onClick={() => openAuthPopup('register')}
-                className="group flex items-center justify-center gap-3 bg-primary hover:bg-primary/85 font-bold text-lg py-4 text-white rounded-xl transition-all duration-300 hover:scale-[1.02] hover:shadow-lg hover:shadow-primary/30 w-full"
-              >
-                {/* <FaUserPlus className="group-hover:scale-110 transition-transform" /> */}
-                انشاء حساب
-              </button>
+              {isAuthenticated ? (
+               
+                <>
+                  <Link
+                    href="/profile"
+                    className="group flex items-center justify-center gap-3 border-2 border-primary/30 hover:border-primary py-4 rounded-xl font-bold text-lg text-primary hover:bg-primary/5 transition-all duration-300 hover:scale-[1.02] w-full"
+                    onClick={handleLinkClick}
+                  >
+                    <BiUser className="text-2xl group-hover:scale-110 transition-transform" />
+                   
+                  </Link>
+               
+                </>
+              ) : (
+               
+                <>
+                  <button
+                    onClick={() => openAuthPopup('login')}
+                    className="group flex items-center justify-center gap-3 border-2 border-primary/30 hover:border-primary py-4 rounded-xl font-bold text-lg text-primary hover:bg-primary/5 transition-all duration-300 hover:scale-[1.02] w-full"
+                  >
+                    الدخول
+                  </button>
+                  <button
+                    onClick={() => openAuthPopup('register')}
+                    className="group flex items-center justify-center gap-3 bg-primary hover:bg-primary/85 font-bold text-lg py-4 text-white rounded-xl transition-all duration-300 hover:scale-[1.02] hover:shadow-lg hover:shadow-primary/30 w-full"
+                  >
+                    انشاء حساب
+                  </button>
+                </>
+              )}
             </div>
 
             <div className="mt-8 pt-6 border-t border-gray-100">
@@ -202,6 +238,10 @@ export default function Navbar() {
         isOpen={showAuthPopup}
         onClose={() => setShowAuthPopup(false)}
         initialMode={authMode}
+        onSuccess={() => {
+          
+          setShowAuthPopup(false);
+        }}
       />
 
       <style jsx>{`

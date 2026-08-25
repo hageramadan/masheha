@@ -3,7 +3,7 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { FaArrowLeft, FaUserPlus, FaPhone } from 'react-icons/fa';
-import { toast } from 'sonner';
+import { toast } from 'react-hot-toast';
 import PhoneInput from '@/src/components/contact/PhoneInput';
 
 export default function RegisterPage() {
@@ -19,7 +19,7 @@ export default function RegisterPage() {
     e.preventDefault();
     
     if (!phoneNumber || phoneNumber.length < 8) {
-      toast.error('⚠️ يرجى إدخال رقم هاتف صحيح');
+      toast.error(' يرجى إدخال رقم هاتف صحيح');
       return;
     }
     

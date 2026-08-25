@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { FaArrowLeft, FaCheckCircle } from 'react-icons/fa';
-import { toast } from 'sonner';
+import { toast } from 'react-hot-toast';
 
 export default function OtpPage() {
   const [otp, setOtp] = useState(['', '', '', '', '', '']);
@@ -51,7 +51,7 @@ export default function OtpPage() {
     e.preventDefault();
     const otpCode = otp.join('');
     if (otpCode.length < 6) {
-      toast.error('⚠️ يرجى إدخال الرمز المكون من 6 أرقام');
+      toast.error(' يرجى إدخال الرمز المكون من 6 أرقام');
       return;
     }
     toast.success('✅ تم التحقق بنجاح!');
