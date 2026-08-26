@@ -69,7 +69,7 @@ export default function Stats({
                 )} */}
               </div>
               <div className="flex items-center gap-1 lg:gap-2">
-                <p className="text-[7px] md:text-[12px] text-gray-600 mt-1 line-clamp-1">
+                <p className="text-[6px] md:text-[12px] text-gray-600 mt-1">
                   {city} - {district} 
                   
                 </p>
