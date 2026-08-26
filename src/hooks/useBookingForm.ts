@@ -317,6 +317,11 @@ export const useBookingForm = (
   }, []);
 
   const submit = useCallback(async () => {
+     if (!token) {
+      toast.error("⚠️ يرجى تسجيل الدخول أولاً");
+      router.push("/login");
+      return null;
+    }
     if (!validate()) {
       toast.error("⚠️ يرجى تصحيح الأخطاء في النموذج");
       return;
@@ -324,11 +329,6 @@ export const useBookingForm = (
 
     if (!priceData) {
       toast.error("⚠️ يرجى الانتظار لحساب السعر");
-      return;
-    }
-
-    if (!isAuthenticated || !token) {
-      toast.error("⚠️ يرجى تسجيل الدخول أولاً");
       return;
     }
 
@@ -374,7 +374,6 @@ export const useBookingForm = (
         zip: bookingData.zip || "12251",
         insuranceTypeId: insuranceTypeId,
         paymentMethodIndex: finalIndex,
-        // ✅ إضافة period_id إذا كان موجوداً (للحجز الشهري)
         periodId: selectedPeriodId,
       };
 
@@ -406,24 +405,17 @@ export const useBookingForm = (
         position: "top-center",
       });
 
-      // ✅ 2. تحديث حالة الدفع إلى pending
-      const updatePending =
-        await UpdatePaymentStatusService.updatePaymentPending(
-          bookingResult.uuid || uuid,
-          paymentMethodId,
-          undefined,
-          token,
-        );
+      // ❌ تم إزالة تحديث حالة الدفع إلى pending من هنا
+      // سيتم التحديث في صفحة payment-callback بعد العودة من بوابة الدفع
 
-      if (!updatePending) {
-        console.warn("⚠️ Could not update payment status to pending");
-      }
-
-      // ✅ 3. معالجة الدفع باستخدام PaymentService
+      // ✅ 3. معالجة الدفع
       setIsRedirecting(true);
 
-      // ✅ بناء رابط العودة بعد الدفع
-      const returnUrl = `${window.location.origin}/profile?tab=bookings&booking_id=${bookingResult.bookingId}&payment_status=success&uuid=${bookingResult.uuid || uuid}&payment_method_id=${paymentMethodId}`;
+      // ✅ بناء روابط العودة
+      const baseUrl = process.env.NEXT_PUBLIC_APP_URL || window.location.origin;
+      const callbackUrl = `${baseUrl}/payment-callback`;
+      const successUrl = `${baseUrl}/booking-success`;
+      const failUrl = `${baseUrl}/payment-failed`;
 
       const paymentResult = await PaymentService.processPayment(
         {
@@ -434,7 +426,9 @@ export const useBookingForm = (
           address: bookingData.pickupAddress || "",
           city: bookingData.city || "الرياض",
           payment_method: paymentMethodId as PaymentMethodType,
-          return_url: returnUrl,
+          return_url: successUrl,
+          cancel_url: failUrl,
+          callback_url: callbackUrl,
           booking_id: parseInt(bookingResult.bookingId || "0"),
         },
         token,
@@ -443,11 +437,10 @@ export const useBookingForm = (
       console.log("✅ Payment Result:", paymentResult);
 
       if (paymentResult.success) {
-        // ✅ تفريغ البيانات بعد نجاح الدفع
         resetForm();
 
         if (paymentResult.isCash) {
-          // ✅ حالة الدفع النقدي
+          // ✅ الدفع النقدي: يتم التحديث فوراً (لأنه لا يوجد بوابة دفع)
           await UpdatePaymentStatusService.updatePaymentSuccess(
             bookingResult.uuid || uuid,
             paymentMethodId,
@@ -463,14 +456,13 @@ export const useBookingForm = (
           setIsRedirecting(false);
           setIsSubmitting(false);
 
-          // ✅ استخدام router.push للتنقل الداخلي
           setTimeout(() => {
             router.push("/profile?tab=bookings");
           }, 1500);
 
           return { ...bookingResult, isCash: true };
         } else if (paymentResult.paymentUrl) {
-          // ✅ فتح رابط الدفع في صفحة جديدة
+          // ✅ الدفع الإلكتروني: التوجيه إلى بوابة الدفع
           toast.success("🔄 جاري توجيهك إلى بوابة الدفع...", {
             duration: 3000,
             position: "top-center",
@@ -478,7 +470,6 @@ export const useBookingForm = (
 
           const paymentUrl = paymentResult.paymentUrl;
 
-          // ✅ التحقق من صحة الرابط
           if (!paymentUrl || !paymentUrl.startsWith("http")) {
             toast.error("❌ رابط الدفع غير صالح");
             setIsRedirecting(false);
@@ -486,7 +477,7 @@ export const useBookingForm = (
             return null;
           }
 
-          // ✅ للروابط الخارجية نستخدم window.location.href
+          // ✅ لا نقوم بتحديث الحالة هنا، بل نتركها لصفحة callback
           setTimeout(() => {
             window.location.href = paymentUrl;
           }, 1000);

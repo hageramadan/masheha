@@ -94,7 +94,7 @@ export default function ProfilePage() {
         <Tabs 
           value={activeTab} 
           onValueChange={setActiveTab} 
-          className="w-full"
+          className="w-full flex flex-col"
         >
           <TabsList className="w-full bg-white p-1 gap-1 lg:gap-3">
             <TabsTrigger 

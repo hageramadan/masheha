@@ -726,6 +726,8 @@ export interface CheckoutRequest {
   payment_method: number;
   address: string;
   city: string;
+   callback_url?: string; 
+  return_url?: string;
 }
 
 export interface CheckoutResponse {

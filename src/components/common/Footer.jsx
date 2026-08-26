@@ -87,7 +87,7 @@ export default function Footer() {
         </div>
 
         <div className="border-t border-gray-600 mt-8 pt-4 text-center text-gray-400">
-          © جميع الحقوق محفوظة | ********** 2025
+          © جميع الحقوق محفوظة | مشيها 2025
         </div>
       </div>
     </footer>

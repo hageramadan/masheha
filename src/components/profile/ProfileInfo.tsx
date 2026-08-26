@@ -183,16 +183,16 @@ export default function ProfileInfo() {
           </div>
         </div>
 
-        {/* أزرار التحكم */}
+        
         <div
           className={cn(
-            "flex flex-col sm:flex-row items-center justify-between gap-4 pt-2",
+            "flex  items-center justify-between gap-4 pt-2",
             "transform transition-all duration-500 ease-out",
             isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"
           )}
           style={{ transitionDelay: "200ms" }}
         >
-          {/* زر تسجيل الخروج */}
+       
           <button
             type="button"
             onClick={handleLogout}
@@ -290,7 +290,7 @@ export default function ProfileInfo() {
                 className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-red-500 text-white rounded-xl hover:bg-red-600 transition-all hover:scale-[1.02]"
               >
                 <FaCheck className="h-4 w-4" />
-                <span>نعم، تسجيل الخروج</span>
+                <span className="text-sm">نعم</span>
               </button>
             </div>
           </div>

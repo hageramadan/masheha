@@ -10,7 +10,7 @@ import BookingPayment from "./BookingPayment";
 import BookingSummary from "./BookingSummary";
 import { FaLocationDot } from "react-icons/fa6";
 import PhoneInput from "../contact/PhoneInput";
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { format } from "date-fns";
 import { ar } from "date-fns/locale";
 import toast from "react-hot-toast";
@@ -30,8 +30,6 @@ import { FaCalendarAlt } from "react-icons/fa";
 import GoogleMapPicker from "./GoogleMapPicker";
 import { CarService } from "@/src/services/carService";
 import { AvailableDate, AvailableHour } from "@/src/types/api";
-
-import AuthPopup from "@/src/components/common/AuthPopup";
 import { useAuth } from "@/src/context/AuthContext";
 
 import {
@@ -59,7 +57,7 @@ export default function BookingForm({
   const rentalCompanyId = car?.providerId || car?.office?.id;
   const bookingType = rentalType === "يومي" ? "daily" : "monthly";
 
-  const { user, isAuthenticated } = useAuth();
+  const { user, isAuthenticated, register, loginWithPhone } = useAuth();
 
   const {
     bookingData,
@@ -91,9 +89,6 @@ export default function BookingForm({
   const [selectedAddress, setSelectedAddress] = useState<string>("");
   const [phoneInputKey, setPhoneInputKey] = useState(0);
 
-  const [isAuthPopupOpen, setIsAuthPopupOpen] = useState(false);
- const [pendingBooking, setPendingBooking] = useState<(() => Promise<unknown>) | null>(null);
-
   const [availableDates, setAvailableDates] = useState<AvailableDate[]>([]);
   const [availableTimes, setAvailableTimes] = useState<AvailableHour[]>([]);
   const [isLoadingPeriods, setIsLoadingPeriods] = useState(true);
@@ -106,6 +101,11 @@ export default function BookingForm({
   const [selectedPeriod, setSelectedPeriod] = useState<AvailablePeriod | null>(
     null
   );
+
+  // ✅ State جديد لتتبع حالة الحجز المعلق
+  const [isPendingBooking, setIsPendingBooking] = useState(false);
+  // ✅ Ref لتخزين بيانات التسجيل مؤقتًا
+  const pendingRegisterDataRef = useRef<any>(null);
 
   const minimumDays = car?.minimumDays || car?.minimum_days || 1;
 
@@ -129,6 +129,16 @@ export default function BookingForm({
     toast.success("🔄 تم إعادة تعيين النموذج");
   }, [resetForm]);
 
+  // ✅ راقب تغيير حالة المصادقة ونفذ الحجز المعلق
+  useEffect(() => {
+    if (isAuthenticated && isPendingBooking) {
+      // reset الحالة المعلقة
+      setIsPendingBooking(false);
+      // تنفيذ الحجز
+      submit();
+    }
+  }, [isAuthenticated, isPendingBooking, submit]);
+
   useEffect(() => {
     const fetchAvailablePeriods = async () => {
       try {
@@ -149,32 +159,25 @@ export default function BookingForm({
 
         console.log("📥 Available Periods Data:", data);
 
-        // ✅ معالجة الحجز الشهري
         if (bookingType === "monthly") {
-          // ✅ التحقق مما إذا كانت available_dates فارغة (null)
           if (!data.available_dates || data.available_dates.length === 0) {
-            // ✅ استخدام available_months بدلاً من ذلك
             if (data.available_months && data.available_months.length > 0) {
               const months = getAvailableMonths(data);
               setAvailableMonths(months);
 
-              // ✅ اختيار أول شهر متاح افتراضياً
               const firstMonth = getFirstAvailableMonth(data);
               if (firstMonth) {
                 setSelectedMonth(firstMonth);
                 if (firstMonth.available_periods.length > 0) {
                   const period = firstMonth.available_periods[0];
                   setSelectedPeriod(period);
-                  // ✅ تحديث الـ rentalDate بشهر الشهر الأول
                   updateField("rentalDate", firstMonth.month);
                   updateField("rentalDays", period.days_count);
-                  // ✅ تعيين period_id
                   setPeriodId(period.id);
                 }
               }
             }
           } else {
-            // ✅ إذا كانت available_dates موجودة، استخدمها كالمعتاد
             setAvailableDates(data.available_dates || []);
             if (bookingData.rentalDate) {
               const selectedDate = data.available_dates.find(
@@ -186,7 +189,6 @@ export default function BookingForm({
             }
           }
         } else {
-          // ✅ الحجز اليومي - استخدم available_dates
           setAvailableDates(data.available_dates || []);
           if (bookingData.rentalDate) {
             const selectedDate = data.available_dates.find(
@@ -236,26 +238,75 @@ export default function BookingForm({
     updateField("customerPhone", phone);
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-  e.preventDefault();
+  // ✅ الدالة الجديدة: تسجيل المستخدم ثم الحجز
+  const handleRegisterAndBook = async () => {
+    try {
+      // 1️⃣ التحقق من وجود الاسم ورقم الموبايل
+      const name = bookingData.customerName?.trim();
+      const phone = bookingData.customerPhone?.trim();
 
-  if (!isAuthenticated) {
-    setIsAuthPopupOpen(true);
-    // ✅ إصلاح: تمرير الدالة submit مباشرة
-    setPendingBooking(() => submit);
-    return;
-  }
+      if (!name) {
+        toast.error("يرجى إدخال الاسم");
+        return;
+      }
 
-  await submit();
-};
+      if (!phone) {
+        toast.error("يرجى إدخال رقم الجوال");
+        return;
+      }
 
-  const handleAuthSuccess = async () => {
-    setIsAuthPopupOpen(false);
+      // 2️⃣ محاولة تسجيل المستخدم
+      const registerData = {
+        name: name,
+        phone: phone,
+        country_code: countryCode || "+966",
+      };
 
-    if (pendingBooking) {
-      await pendingBooking();
-      setPendingBooking(null);
+      // ✅ تفعيل حالة الحجز المعلق
+      setIsPendingBooking(true);
+
+      // ✅ استدعاء register
+      const response = await register(registerData);
+
+      if (!response?.result) {
+        // ❌ فشل التسجيل: إلغاء الحجز المعلق
+        setIsPendingBooking(false);
+        toast.error("❌ فشل إنشاء الحساب", { id: "register" });
+      }
+      // ✅ إذا نجح التسجيل، الـ useEffect سيتولى تنفيذ الحجز تلقائيًا
+    } catch (error: any) {
+      console.error("Register error:", error);
+      // ❌ فشل التسجيل: إلغاء الحجز المعلق
+      setIsPendingBooking(false);
+      toast.error(error?.message || "❌ حدث خطأ أثناء إنشاء الحساب", {
+        id: "register",
+      });
     }
+  };
+
+  // ✅ معالج الضغط على زر الحجز
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    // ✅ التحقق من البيانات المطلوبة أولاً
+    if (!bookingData.customerName?.trim()) {
+      toast.error("يرجى إدخال الاسم");
+      return;
+    }
+
+    if (!bookingData.customerPhone?.trim()) {
+      toast.error("يرجى إدخال رقم الجوال");
+      return;
+    }
+
+    // ✅ إذا كان المستخدم غير مسجل دخول → نسجل حساب جديد
+    if (!isAuthenticated) {
+      await handleRegisterAndBook();
+      return;
+    }
+
+    // ✅ إذا كان مسجل دخول → حجز مباشر
+    await submit();
   };
 
   const handleLocationSelect = async (
@@ -331,14 +382,15 @@ export default function BookingForm({
   const handleMonthSelect = (month: AvailableMonth) => {
     setSelectedMonth(month);
     if (month.available_periods.length > 0) {
-      const period = month.available_periods[0];
-      setSelectedPeriod(period);
-      updateField("rentalDate", month.month);
-      updateField("rentalDays", period.days_count);
-      // ✅ تعيين period_id
-      setPeriodId(period.id);
+        const period = month.available_periods[0];
+        setSelectedPeriod(period);
+        updateField("rentalDate", month.month);
+        updateField("rentalDays", period.days_count);
+        
+        // ✅ تمرير period.id إلى useBookingForm
+        setPeriodId(period.id); 
     }
-  };
+};
 
   // ✅ عرض الأشهر المتاحة في Select (للحجز الشهري)
   const renderMonthlySelector = () => {
@@ -472,9 +524,7 @@ export default function BookingForm({
             </div>
 
             <div className="bg-white space-y-4">
-              {/* ✅ تاريخ الاستلام - معالجة الحجز اليومي والشهري */}
               {bookingType === "daily" ? (
-                // ✅ الحجز اليومي - عرض التقويم
                 <div>
                   <label className="block text-sm font-bold text-gray-700 mb-2">
                     تاريخ الاستلام *
@@ -545,7 +595,6 @@ export default function BookingForm({
                   )}
                 </div>
               ) : (
-                // ✅ الحجز الشهري - عرض Select
                 <div>
                   <label className="block text-sm font-bold text-gray-700 mb-2">
                     اختر الشهر *
@@ -559,7 +608,6 @@ export default function BookingForm({
                 </div>
               )}
 
-              {/* ✅ وقت الاستلام - يظهر فقط للحجز اليومي */}
               {bookingType === "daily" && (
                 <div>
                   <label className="block text-sm font-bold text-gray-700 mb-2">
@@ -603,7 +651,6 @@ export default function BookingForm({
                 </div>
               )}
 
-              {/* ✅ عدد أيام الحجز - يظهر فقط للحجز اليومي */}
               {bookingType === "daily" && (
                 <div>
                   <label className="block text-sm font-bold text-gray-700 mb-2">
@@ -719,7 +766,7 @@ export default function BookingForm({
           <button
             type="submit"
             onClick={handleSubmit}
-            disabled={isSubmitting || isCalculating || isRedirecting}
+            disabled={isSubmitting || isCalculating || isRedirecting || isPendingBooking}
             className="w-full bg-primary hover:bg-primary-dark text-white py-4 rounded-xl text-lg font-bold transition-all duration-300 hover:scale-[1.02] hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {isSubmitting ? (
@@ -731,11 +778,6 @@ export default function BookingForm({
               <span className="flex items-center justify-center gap-2">
                 <span className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
                 جاري التوجيه لبوابة الدفع...
-              </span>
-            ) : isCalculating ? (
-              <span className="flex items-center justify-center gap-2">
-                <span className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
-                جاري حساب السعر...
               </span>
             ) : (
               `احجز الآن (${rentalType})`
@@ -750,16 +792,6 @@ export default function BookingForm({
           initialPosition={{ lat: 24.7136, lng: 46.6753 }}
         />
       </div>
-
-      <AuthPopup
-        isOpen={isAuthPopupOpen}
-        onClose={() => {
-          setIsAuthPopupOpen(false);
-          setPendingBooking(null);
-        }}
-        initialMode="login"
-        onSuccess={handleAuthSuccess}
-      />
     </>
   );
 }

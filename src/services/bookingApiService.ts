@@ -456,10 +456,11 @@ async function request<T>(
 ): Promise<T> {
   const token = getToken();
   
-  // ✅ استخدام Record بدلاً من HeadersInit
+ 
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
     'Accept': 'application/json',
+    "accept-language": "ar",
   };
 
   if (token) {

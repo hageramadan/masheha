@@ -51,6 +51,7 @@ export class UpdatePaymentStatusService {
             'Content-Type': 'application/json',
             'Accept': 'application/json',
             'Authorization': `Bearer ${token}`,
+            "accept-language": "ar",
           },
           body: JSON.stringify(parameters),
         }
@@ -64,8 +65,7 @@ export class UpdatePaymentStatusService {
       const data: UpdatePaymentStatusResponse = await response.json();
       console.log('📥 Update payment status response:', data);
 
-      // ✅ التحقق من النجاح - عدة حالات
-      // 1. result === true
+     
       if (data.result === true) {
         console.log('✅ Payment status updated successfully (result: true)');
         return true;

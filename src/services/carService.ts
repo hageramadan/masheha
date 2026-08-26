@@ -405,6 +405,10 @@ export class CarService extends ApiService {
         insurance_type_id: params.insurance_type_id || 4,
         address: params.address || "",
         amount: params.amount || 0,
+              ...(params.rental_company_car_period_id && {
+        rental_company_car_period_id: params.rental_company_car_period_id,
+      }),
+
       };
 
       
@@ -445,6 +449,9 @@ static async checkout(
       payment_method: params.payment_method,
       address: params.address,
       city: params.city || 'الرياض',
+      
+ callback_url: params.callback_url, 
+      return_url: params.return_url,
     };
 
     console.log('📤 Checkout Request:', requestBody);

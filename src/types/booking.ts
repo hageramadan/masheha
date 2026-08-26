@@ -292,6 +292,7 @@ export interface CreateBookingRequest {
   insurance_type_id?: number;
   address: string;
   amount: number;
+  rental_company_car_period_id?: number;
 }
 
 export interface CreateBookingResponse {

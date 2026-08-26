@@ -53,7 +53,7 @@ function ProviderStats({ provider }: { provider: ProviderGroup }) {
         alt={icon.title}
         width={20}
         height={20}
-        className="object-contain"
+        className="object-contain w-5 h-5 lg:w-7 lg:h-7"
       />
     ),
     title: icon.title,
@@ -343,8 +343,8 @@ export default function FeaturedCars() {
   }
 
   return (
-    <section className="py-12">
-      <div className="container mx-auto px-4">
+    <section className="py-2 pt-4 lg:pt-8">
+      <div className="container mx-auto px-2">
         <h2 className="text-2xl md:text-4xl font-bold mb-4 text-primary">
           احجز الان
         </h2>
@@ -352,7 +352,7 @@ export default function FeaturedCars() {
         <div className="flex justify-center gap-4 mb-10">
           <Button
             onClick={() => setActiveTab("daily")}
-            className={`px-8 py-6 text-lg rounded-full transition-all duration-300 ${
+            className={`px-6 py-5 text-base lg:px-8 lg:py-6 lg:text-lg rounded-full transition-all duration-300 ${
               activeTab === "daily"
                 ? "bg-primary text-white shadow-lg shadow-primary/30"
                 : "bg-white text-gray-600 border-2 border-gray-200 hover:border-primary hover:text-primary"
@@ -364,7 +364,7 @@ export default function FeaturedCars() {
 
           <Button
             onClick={() => setActiveTab("monthly")}
-            className={`px-8 py-6 text-lg rounded-full transition-all duration-300 ${
+            className={`px-6 py-5 text-base lg:px-8 lg:py-6 lg:text-lg rounded-full transition-all duration-300 ${
               activeTab === "monthly"
                 ? "bg-primary text-white shadow-lg shadow-primary/30"
                 : "bg-white text-gray-600 border-2 border-gray-200 hover:border-primary hover:text-primary"

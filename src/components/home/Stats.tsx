@@ -36,19 +36,19 @@ export default function Stats({
   customerSatisfactionRate = 94,
   deliverySpeedRate = 98,
   features = [
-    { icon: <LuShieldCheck className="text-xl" />, title: "بدون تأمين مسترد" },
-    { icon: <CiDeliveryTruck className="text-xl" />, title: "توصيل مجاني" },
+    { icon: <LuShieldCheck className="text-sm" />, title: "بدون تأمين مسترد" },
+    { icon: <CiDeliveryTruck className="text-sm" />, title: "توصيل مجاني" },
     {
-      icon: <TbClockHour3 className="text-xl" />,
+      icon: <TbClockHour3 className="text-sm" />,
       title: "تأخير مجاني عند الإرجاع",
     },
   ],
 }: StatsProps) {
   return (
-    <section className="py-2 md:py-4 bg-white">
-      <div className="container mx-auto px-2 lg:px-4">
-        <div className="grid grid-cols-6 md:grid-cols-6 gap-1 lg:gap-6 mb-2 md:mb-4">
-          <div className="flex col-span-3">
+    <section className="py-4 bg-white">
+      <div className="container mx-auto px-1 lg:px-4">
+        <div className="grid grid-cols-5 md:grid-cols-5 gap-1 lg:gap-6 mb-4">
+          <div className="flex col-span-2">
             <Image
               src={providerImage}
               width={155}
@@ -58,7 +58,7 @@ export default function Stats({
             />
             <div className="flex flex-col gap-0 lg:gap-1">
               <div className="flex items-center flex-wrap">
-                <div className="text-[10px] lg:text-xl font-bold text-primary">
+                <div className="text-sm lg:text-xl font-bold text-primary">
                   {providerName}
                 </div>
                 {/* {isVerified && (
@@ -68,17 +68,21 @@ export default function Stats({
                   </div>
                 )} */}
               </div>
-              <div className="flex items-center gap-2">
-                <p className="text-[7px] md:text-sm text-gray-600 mt-1 line-clamp-1">
-                  {city} - {district} |
+              <div className="flex items-center gap-1 lg:gap-2">
+                <p className="text-[7px] md:text-[12px] text-gray-600 mt-1 line-clamp-1">
+                  {city} - {district} 
+                  
                 </p>
-                <FaStar className="text-orange-300 text-xs lg:text-2xl" />
+                <span className="text-sm lg:text-lg text-gray-600">|</span>
+                <div className="flex items-center gap-0.5 lg:gap-1">
+                  <FaStar className="text-orange-300 text-[10px] lg:text-2xl" />
                 <span className="text-[10px] lg:text-sm">{averageRating}</span>
                 {countReviews > 0 && (
                   <span className="text-[8px] lg:text-xs text-gray-400">
                     ({countReviews} تقييم)
                   </span>
                 )}
+                </div>
               </div>
             </div>
           </div>
@@ -132,7 +136,7 @@ export default function Stats({
               key={index}
               className="flex items-center gap-1 lg:gap-3 p-1 lg:p-4 bg-[#0127380A] rounded-[8px] hover:bg-gray-200 transition-colors"
             >
-              <div>{feature.icon}</div>
+              <div className="">{feature.icon}</div>
               <div>
                 <p className="font-bold text-gray-800 text-[8px] md:text-base">
                   {feature.title}
