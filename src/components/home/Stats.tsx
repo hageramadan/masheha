@@ -47,8 +47,8 @@ export default function Stats({
   return (
     <section className="py-4 bg-white">
       <div className="container mx-auto px-1 lg:px-4">
-        <div className="grid grid-cols-5 md:grid-cols-5 gap-1 lg:gap-6 mb-4">
-          <div className="flex col-span-2">
+        <div className="grid grid-cols-5 lg:grid-cols-4 gap-1 lg:gap-6 mb-4">
+          <div className="flex col-span-2 lg:col-span-1">
             <Image
               src={providerImage}
               width={155}
