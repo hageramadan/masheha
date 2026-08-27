@@ -54,11 +54,11 @@ export default function Stats({
               width={155}
               height={155}
               alt={providerName}
-              className="object-cover w-14 h-14 lg:w-20 lg:h-20"
+              className="object-contain w-14 h-14 lg:w-20 lg:h-20 rounded-full"
             />
             <div className="flex flex-col gap-0 lg:gap-1">
               <div className="flex items-center flex-wrap">
-                <div className="text-sm lg:text-xl font-bold text-primary">
+                <div className="text-[12px] lg:text-xl font-bold text-primary">
                   {providerName}
                 </div>
                 {/* {isVerified && (
@@ -69,7 +69,7 @@ export default function Stats({
                 )} */}
               </div>
               <div className="flex items-center gap-1 lg:gap-2">
-                <p className="text-[6px] md:text-[12px] text-gray-600 mt-1">
+                <p className="font-bold text-[6px] md:text-[12px] text-gray-600 mt-1">
                   {city} - {district} 
                   
                 </p>

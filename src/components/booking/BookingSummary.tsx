@@ -98,14 +98,14 @@ export default function BookingSummary({
           </div>
         )}
 
-        {deliveryFee > 0 && (
+        {/* {deliveryFee > 0 && (
           <div className="flex justify-between text-sm pb-3 border-b border-gray-200">
             <span className="text-gray-500">رسوم التوصيل</span>
             <span className="text-base text-primary">
               {formatCurrency(deliveryFee)}
             </span>
           </div>
-        )}
+        )} */}
 
         {totals.tax > 0 && (
           <div className="flex justify-between text-sm pb-3 border-b border-gray-200">
