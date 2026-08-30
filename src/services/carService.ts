@@ -500,7 +500,7 @@ static async checkout(
       const clientSecret = paymentData?.client_secret || response.data?.client_secret;
       if (clientSecret) {
         // ✅ استخدم public key المناسب
-        const publicKey = 'sau_pk_live_8Dza5gChMSVJbnsKtWKJOTs8jlQz6ZEW'; // Live Key
+        const publicKey = 'sau_csk_test_54530749b40f5727f5003d9b04602948'; // Live Key
         // للاختبار استخدم: 'sau_pk_test_SCltAxh7OTxzJ5ydtfIhJstUARoCOekt'
         paymentUrl = `https://ksa.paymob.com/unifiedcheckout/?publicKey=${publicKey}&clientSecret=${clientSecret}`;
         console.log('🔗 Paymob URL (built from client_secret):', paymentUrl);
@@ -513,7 +513,7 @@ static async checkout(
       // ❌ لا تستخدم redirection_url لأنه رابط POST
       // ✅ استخدم client_secret بدلاً منه
       if (paymentData.client_secret) {
-        const publicKey = 'sau_pk_live_8Dza5gChMSVJbnsKtWKJOTs8jlQz6ZEW';
+        const publicKey = 'sau_csk_test_54530749b40f5727f5003d9b04602948';
         paymentUrl = `https://ksa.paymob.com/unifiedcheckout/?publicKey=${publicKey}&clientSecret=${paymentData.client_secret}`;
         console.log('🔗 Paymob URL (from payment_keys fallback):', paymentUrl);
       }

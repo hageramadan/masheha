@@ -614,17 +614,19 @@ export default function BookingsList({ initialBookingId = null }: BookingsListPr
                           {formatDate(booking.end_date)}
                         </span>
                       </div>
-
+                     {booking.delivery_address && (
                       <div className="flex items-center gap-2 text-xs text-gray-500">
                         <FaMapMarkerAlt className="h-3 w-3 shrink-0" />
                         <span className="truncate">
                           {booking.delivery_type === "delivery"
-                            ? "توصيل إلى الموقع"
+                            ? "توصيل إلى "
                             : "استلام من الفرع"}
                           {booking.delivery_address &&
                             ` - ${booking.delivery_address}`}
                         </span>
                       </div>
+                     )}
+                      
                     </div>
                   </div>
                 </div>

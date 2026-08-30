@@ -156,7 +156,7 @@ export const useBookingForm = (
       return response;
     } catch (error) {
       console.error("Error calculating price:", error);
-      toast.error("حدث خطأ في حساب السعر");
+      // toast.error("حدث خطأ في حساب السعر");
     } finally {
       setIsCalculating(false);
     }

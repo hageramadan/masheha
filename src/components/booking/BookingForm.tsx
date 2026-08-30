@@ -10,7 +10,7 @@ import BookingPayment from "./BookingPayment";
 import BookingSummary from "./BookingSummary";
 import { FaLocationDot } from "react-icons/fa6";
 import PhoneInput from "../contact/PhoneInput";
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { format } from "date-fns";
 import { ar } from "date-fns/locale";
 import toast from "react-hot-toast";
@@ -39,6 +39,11 @@ import {
   getFirstAvailableMonth,
 } from "@/src/utils/bookingUtils";
 
+// استيراد Hook Firebase
+import { usePhoneAuth } from "@/src/hooks/usePhoneAuth";
+// استيراد OTP Popup
+import OTPPopup from "./OTPPopup";
+
 interface BookingFormProps {
   carId: string;
   car: any;
@@ -57,7 +62,7 @@ export default function BookingForm({
   const rentalCompanyId = car?.providerId || car?.office?.id;
   const bookingType = rentalType === "يومي" ? "daily" : "monthly";
 
-  const { user, isAuthenticated, register, loginWithPhone } = useAuth();
+  const { user, isAuthenticated, register } = useAuth();
 
   const {
     bookingData,
@@ -69,7 +74,6 @@ export default function BookingForm({
     isCalculating,
     updateField,
     toggleService,
-    handleFileSelect,
     submit,
     resetForm,
     setPeriodId,
@@ -82,6 +86,9 @@ export default function BookingForm({
     car?.name || "سياره"
   );
 
+  // Firebase Phone Auth
+  const { sendOTP, verifyOTP, isOTPSent, isLoading: isOTPLoading } = usePhoneAuth();
+
   const [phoneNumber, setPhoneNumber] = useState("");
   const [countryCode, setCountryCode] = useState("+966");
   const [isCalendarOpen, setIsCalendarOpen] = useState(false);
@@ -93,7 +100,7 @@ export default function BookingForm({
   const [availableTimes, setAvailableTimes] = useState<AvailableHour[]>([]);
   const [isLoadingPeriods, setIsLoadingPeriods] = useState(true);
 
-  // ✅ حالات الحجز الشهري
+  // حالات الحجز الشهري
   const [availableMonths, setAvailableMonths] = useState<AvailableMonth[]>([]);
   const [selectedMonth, setSelectedMonth] = useState<AvailableMonth | null>(
     null
@@ -102,14 +109,80 @@ export default function BookingForm({
     null
   );
 
-  // ✅ State جديد لتتبع حالة الحجز المعلق
-  const [isPendingBooking, setIsPendingBooking] = useState(false);
-  // ✅ Ref لتخزين بيانات التسجيل مؤقتًا
-  const pendingRegisterDataRef = useRef<any>(null);
+  // حالات OTP
+  const [otpCode, setOtpCode] = useState("");
+  const [isPhoneVerified, setIsPhoneVerified] = useState(false);
+  const [showOTPInput, setShowOTPInput] = useState(false);
+  
+  // حالة تسجيل المستخدم
+  const [isUserRegistered, setIsUserRegistered] = useState(false);
+  
+  // حالة البوب اب
+  const [isOTPPopupOpen, setIsOTPPopupOpen] = useState(false);
 
   const minimumDays = car?.minimumDays || car?.minimum_days || 1;
 
-  // ✅ تفريغ رقم الهاتف عند تغيير bookingData.customerPhone
+  // ✅ دالة التحقق من صحة النموذج بالكامل
+  const validateForm = useCallback(() => {
+    const name = bookingData.customerName?.trim();
+    const phone = bookingData.customerPhone?.trim();
+    const rentalDate = bookingData.rentalDate;
+    const rentalTime = bookingData.rentalTime;
+    const rentalDays = bookingData.rentalDays;
+    const paymentMethod = bookingData.selectedPaymentMethod;
+
+    // 1️⃣ التحقق من الاسم
+    if (!name) {
+      toast.error("يرجى إدخال الاسم");
+      return false;
+    }
+
+    // 2️⃣ التحقق من رقم الجوال
+    if (!phone) {
+      toast.error("يرجى إدخال رقم الجوال");
+      return false;
+    }
+
+    // 3️⃣ التحقق من تاريخ الاستلام (للحجز اليومي)
+    if (bookingType === "daily" && !rentalDate) {
+      toast.error("يرجى اختيار تاريخ الاستلام");
+      return false;
+    }
+
+    // 4️⃣ التحقق من وقت الاستلام (للحجز اليومي)
+    if (bookingType === "daily" && !rentalTime) {
+      toast.error("يرجى اختيار وقت الاستلام");
+      return false;
+    }
+
+    // 5️⃣ التحقق من عدد الأيام (للحجز اليومي)
+    if (bookingType === "daily" && (!rentalDays || rentalDays < minimumDays)) {
+      toast.error(`الحد الأدنى للحجز هو ${minimumDays} أيام`);
+      return false;
+    }
+
+    // 6️⃣ التحقق من الشهر (للحجز الشهري)
+    if (bookingType === "monthly" && !selectedMonth) {
+      toast.error("يرجى اختيار الشهر");
+      return false;
+    }
+
+    // 7️⃣ التحقق من موقع الاستلام
+    if (!selectedAddress) {
+      toast.error("يرجى تحديد موقع الاستلام على الخريطة");
+      return false;
+    }
+
+    // 8️⃣ التحقق من طريقة الدفع
+    if (!paymentMethod) {
+      toast.error("يرجى اختيار طريقة الدفع");
+      return false;
+    }
+
+    return true;
+  }, [bookingData, bookingType, minimumDays, selectedAddress, selectedMonth]);
+
+  // تفريغ رقم الهاتف عند تغيير bookingData.customerPhone
   useEffect(() => {
     if (bookingData.customerPhone) {
       setPhoneNumber(bookingData.customerPhone);
@@ -119,25 +192,39 @@ export default function BookingForm({
     }
   }, [bookingData.customerPhone]);
 
-  // ✅ دالة لإعادة تعيين النموذج بالكامل
+  // ملء بيانات المستخدم إذا كان مسجل دخول
+  useEffect(() => {
+    if (isAuthenticated && user) {
+      if (user.name) {
+        updateField("customerName", user.name);
+      }
+      if (user.phone) {
+        const phone = user.phone.toString();
+        setPhoneNumber(phone);
+        updateField("customerPhone", phone);
+      }
+      if (user.country_code) {
+        setCountryCode(user.country_code);
+      }
+      // إذا كان مسجل دخول، اعتبره مسجل بالفعل
+      setIsUserRegistered(true);
+    }
+  }, [isAuthenticated, user, updateField]);
+
+  // دالة لإعادة تعيين النموذج بالكامل
   const handleResetForm = useCallback(() => {
     resetForm();
     setPhoneNumber("");
     setCountryCode("+966");
     setSelectedAddress("");
     setPhoneInputKey((prev) => prev + 1);
+    setOtpCode("");
+    setIsPhoneVerified(false);
+    setShowOTPInput(false);
+    setIsUserRegistered(false);
+    setIsOTPPopupOpen(false);
     toast.success("🔄 تم إعادة تعيين النموذج");
   }, [resetForm]);
-
-  // ✅ راقب تغيير حالة المصادقة ونفذ الحجز المعلق
-  useEffect(() => {
-    if (isAuthenticated && isPendingBooking) {
-      // reset الحالة المعلقة
-      setIsPendingBooking(false);
-      // تنفيذ الحجز
-      submit();
-    }
-  }, [isAuthenticated, isPendingBooking, submit]);
 
   useEffect(() => {
     const fetchAvailablePeriods = async () => {
@@ -238,75 +325,135 @@ export default function BookingForm({
     updateField("customerPhone", phone);
   };
 
-  // ✅ الدالة الجديدة: تسجيل المستخدم ثم الحجز
-  const handleRegisterAndBook = async () => {
+  // دالة تنسيق رقم الهاتف لصيغة Firebase
+  const formatPhoneNumber = (phone: string, countryCode: string) => {
+    const cleanPhone = phone.replace(/[^0-9]/g, '');
+    const phoneWithoutZero = cleanPhone.startsWith('0') ? cleanPhone.slice(1) : cleanPhone;
+    return `${countryCode}${phoneWithoutZero}`;
+  };
+
+  // 1️⃣ أولاً: تسجيل المستخدم في Backend
+  const handleRegisterUser = async () => {
     try {
-      // 1️⃣ التحقق من وجود الاسم ورقم الموبايل
+      // ✅ التحقق من صحة النموذج قبل التسجيل
+      if (!validateForm()) return false;
+
       const name = bookingData.customerName?.trim();
       const phone = bookingData.customerPhone?.trim();
 
-      if (!name) {
-        toast.error("يرجى إدخال الاسم");
-        return;
+      // لو مسجل دخول بالفعل، مش محتاج تسجيل
+      if (isAuthenticated) {
+        setIsUserRegistered(true);
+        return true;
       }
 
-      if (!phone) {
-        toast.error("يرجى إدخال رقم الجوال");
-        return;
-      }
-
-      // 2️⃣ محاولة تسجيل المستخدم
       const registerData = {
         name: name,
         phone: phone,
         country_code: countryCode || "+966",
       };
 
-      // ✅ تفعيل حالة الحجز المعلق
-      setIsPendingBooking(true);
-
-      // ✅ استدعاء register
+      // toast.loading("جاري إنشاء الحساب...", { id: "register" });
+      
       const response = await register(registerData);
-
+      
       if (!response?.result) {
-        // ❌ فشل التسجيل: إلغاء الحجز المعلق
-        setIsPendingBooking(false);
-        toast.error("❌ فشل إنشاء الحساب", { id: "register" });
+        // toast.error("❌ فشل إنشاء الحساب", { id: "register" });
+        return false;
       }
-      // ✅ إذا نجح التسجيل، الـ useEffect سيتولى تنفيذ الحجز تلقائيًا
+
+      setIsUserRegistered(true);
+      // toast.success("تم إنشاء الحساب بنجاح", { id: "register" });
+      return true;
+      
     } catch (error: any) {
       console.error("Register error:", error);
-      // ❌ فشل التسجيل: إلغاء الحجز المعلق
-      setIsPendingBooking(false);
-      toast.error(error?.message || "❌ حدث خطأ أثناء إنشاء الحساب", {
-        id: "register",
-      });
+      // toast.error(error?.message || "❌ حدث خطأ أثناء إنشاء الحساب");
+      return false;
     }
   };
 
-  // ✅ معالج الضغط على زر الحجز
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-
-    // ✅ التحقق من البيانات المطلوبة أولاً
-    if (!bookingData.customerName?.trim()) {
-      toast.error("يرجى إدخال الاسم");
-      return;
+  // 2️⃣ إرسال OTP (تفتح البوب اب)
+  const handleSendOTP = async () => {
+    const phone = bookingData.customerPhone?.trim();
+    if (!phone) {
+      toast.error("يرجى إدخال رقم الجوال");
+      return false;
     }
 
-    if (!bookingData.customerPhone?.trim()) {
+    const formattedPhone = formatPhoneNumber(phone, countryCode);
+    const sent = await sendOTP(formattedPhone);
+    
+    if (sent) {
+      setShowOTPInput(true);
+      setIsOTPPopupOpen(true); // فتح البوب اب
+      
+      return true;
+    }
+    return false;
+  };
+
+  // 3️⃣ التحقق من OTP (من البوب اب)
+  const handleVerifyOTPFromPopup = async (code: string): Promise<boolean> => {
+    const user = await verifyOTP(code);
+    if (user) {
+      setIsPhoneVerified(true);
+      setShowOTPInput(false);
+      setIsOTPPopupOpen(false); 
+      await submit();
+      return true;
+    }
+    return false;
+  };
+
+  // دالة إعادة إرسال OTP
+  const handleResendOTP = async () => {
+    const phone = bookingData.customerPhone?.trim();
+    if (!phone) {
       toast.error("يرجى إدخال رقم الجوال");
       return;
     }
 
-    // ✅ إذا كان المستخدم غير مسجل دخول → نسجل حساب جديد
-    if (!isAuthenticated) {
-      await handleRegisterAndBook();
+    const formattedPhone = formatPhoneNumber(phone, countryCode);
+    const sent = await sendOTP(formattedPhone);
+    if (sent) {
+      toast.success("📱 تم إعادة إرسال رمز التحقق");
+    }
+  };
+
+  // معالج الضغط على زر الحجز
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    // ✅ التحقق من صحة النموذج بالكامل قبل أي شيء
+    if (!validateForm()) return;
+
+    // 🎯 الترتيب:
+
+    // 1️⃣ تسجيل المستخدم في Backend (أولاً)
+    if (!isUserRegistered) {
+      const registered = await handleRegisterUser();
+      if (!registered) return;
+      // بعد التسجيل، نكمل لإرسال OTP
+    }
+
+    // 2️⃣ لو OTP متحقق منه → ننفذ الحجز
+    if (isPhoneVerified) {
+      await submit();
       return;
     }
 
-    // ✅ إذا كان مسجل دخول → حجز مباشر
-    await submit();
+    // 3️⃣ لو OTP مش مرسل → نرسله ونفتح البوب اب
+    if (!isOTPSent) {
+      await handleSendOTP();
+      return;
+    }
+
+    // 4️⃣ لو OTP مرسل بس لسه متحققش → نفتح البوب اب
+    if (isOTPSent && !isPhoneVerified) {
+      setIsOTPPopupOpen(true);
+      toast.error("📱 أدخل رمز التحقق");
+    }
   };
 
   const handleLocationSelect = async (
@@ -378,7 +525,7 @@ export default function BookingForm({
     return format(date, "dd/MM/yyyy", { locale: ar });
   };
 
-  // ✅ معالج اختيار الشهر للحجز الشهري
+  // معالج اختيار الشهر للحجز الشهري
   const handleMonthSelect = (month: AvailableMonth) => {
     setSelectedMonth(month);
     if (month.available_periods.length > 0) {
@@ -386,13 +533,11 @@ export default function BookingForm({
         setSelectedPeriod(period);
         updateField("rentalDate", month.month);
         updateField("rentalDays", period.days_count);
-        
-        // ✅ تمرير period.id إلى useBookingForm
         setPeriodId(period.id); 
     }
-};
+  };
 
-  // ✅ عرض الأشهر المتاحة في Select (للحجز الشهري)
+  // عرض الأشهر المتاحة في Select (للحجز الشهري)
   const renderMonthlySelector = () => {
     if (bookingType !== "monthly") return null;
 
@@ -400,7 +545,7 @@ export default function BookingForm({
       return (
         <div className="text-center py-4">
           <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin mx-auto"></div>
-          <p className="text-sm text-gray-500 mt-2">جاري تحميل الأشهر المتاحة...</p>
+          {/* <p className="text-sm text-gray-500 mt-2">جاري تحميل الأشهر المتاحة...</p> */}
         </div>
       );
     }
@@ -452,7 +597,7 @@ export default function BookingForm({
           </SelectContent>
         </Select>
 
-        {selectedMonth && selectedPeriod && (
+        {/* {selectedMonth && selectedPeriod && (
           <div className="mt-4 p-4 bg-green-50 border border-green-200 rounded-xl">
             <div className="flex items-center justify-between">
               <div>
@@ -468,7 +613,7 @@ export default function BookingForm({
               </p>
             </div>
           </div>
-        )}
+        )} */}
       </div>
     );
   };
@@ -497,7 +642,13 @@ export default function BookingForm({
                       : "border-gray-200 focus:border-primary"
                   }`}
                   placeholder="الاسم"
+                  disabled={isAuthenticated}
                 />
+                {isAuthenticated && (
+                  <p className="text-xs text-green-600 mt-1">
+                    ✓ تم ملء البيانات تلقائياً من حسابك
+                  </p>
+                )}
                 {errors.customerName && (
                   <p className="text-red-500 text-sm mt-1">
                     {errors.customerName}
@@ -515,6 +666,11 @@ export default function BookingForm({
                   onChange={handlePhoneChange}
                   required={true}
                 />
+                {isAuthenticated && (
+                  <p className="text-xs text-green-600 mt-1">
+                    ✓ تم ملء البيانات تلقائياً من حسابك
+                  </p>
+                )}
                 {errors.customerPhone && (
                   <p className="text-red-500 text-sm mt-1">
                     {errors.customerPhone}
@@ -718,7 +874,7 @@ export default function BookingForm({
             <div className="bg-white space-y-4">
               <div className="flex flex-col gap-2">
                 <h2 className="text-sm lg:text-base font-bold text-gray-800">
-                  موقع الاستلام
+                  موقع الاستلام *
                 </h2>
                 <button
                   type="button"
@@ -730,12 +886,16 @@ export default function BookingForm({
                 </button>
               </div>
 
-              {selectedAddress && (
+              {selectedAddress ? (
                 <div className="text-xs text-gray-500 bg-gray-50 p-2 rounded-lg flex items-center gap-2">
                   <FaLocationDot className="h-3 w-3 text-primary shrink-0" />
                   <span className="font-medium">الموقع المحدد:</span>
                   <span className="break-all">{selectedAddress}</span>
                 </div>
+              ) : (
+                <p className="text-xs text-red-500 text-center">
+                  ⚠️ يرجى تحديد موقع الاستلام على الخريطة
+                </p>
               )}
             </div>
           </form>
@@ -763,10 +923,18 @@ export default function BookingForm({
             rentalType={rentalType}
           />
 
+          {/* حاوية reCAPTCHA */}
+          <div id="recaptcha-container"></div>
+
           <button
             type="submit"
             onClick={handleSubmit}
-            disabled={isSubmitting || isCalculating || isRedirecting || isPendingBooking}
+            disabled={
+              isSubmitting || 
+              isCalculating || 
+              isRedirecting || 
+              isOTPLoading
+            }
             className="w-full bg-primary hover:bg-primary-dark text-white py-4 rounded-xl text-lg font-bold transition-all duration-300 hover:scale-[1.02] hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {isSubmitting ? (
@@ -792,6 +960,19 @@ export default function BookingForm({
           initialPosition={{ lat: 24.7136, lng: 46.6753 }}
         />
       </div>
+
+      {/* OTP Popup */}
+      <OTPPopup
+        isOpen={isOTPPopupOpen}
+        onClose={() => {
+          setIsOTPPopupOpen(false);
+          setShowOTPInput(false);
+        }}
+        onVerify={handleVerifyOTPFromPopup}
+        isLoading={isOTPLoading}
+        phoneNumber={formatPhoneNumber(bookingData.customerPhone || '', countryCode)}
+        onResend={handleResendOTP}
+      />
     </>
   );
 }

@@ -20,6 +20,7 @@ import {
 import { LuShieldCheck } from "react-icons/lu";
 import { CiDeliveryTruck } from "react-icons/ci";
 import { TbClockHour3 } from "react-icons/tb";
+import IconsFeatures from "./IconsFeatures";
 
 interface ProviderGroup {
   providerId: number;
@@ -130,15 +131,15 @@ function CarCard({
         <div className="mt-4">
           <div className="flex flex-col items-center justify-center gap-1">
             <div className="flex items-center justify-center gap-2">
-              <p className="text-[#A7A7A7] text-sm md:text-base font-bold">
+              {/* <p className="text-[#A7A7A7] text-sm md:text-base font-bold">
                 {year}
-              </p>
+              </p> */}
               <h3 className="text-sm lg:text-xl font-bold text-primary line-clamp-1">
                 {name}
               </h3>
             </div>
             <span className="w-full border-b border-gray-200 mb-1 md:mb-8 pb-2 md:pb-4 text-center text-[#0079AB] font-bold text-sm md:text-base">
-              {brand}
+              {/* {brand} */}   {year}
             </span>
           </div>
 
@@ -276,53 +277,61 @@ export default function FeaturedCars() {
   };
 
   const renderMonthlySections = () => {
-    if (!monthlyData) return null;
+  if (!monthlyData) return null;
 
-    const sections = Object.entries(monthlyData)
-      .filter(([key, value]) => value?.cars?.length > 0)
-      .map(([key, value]) => ({
-        key,
-        title: value.title || key,
-        data: value,
-      }));
+  const sections = Object.entries(monthlyData)
+    .filter(([key, value]) => value?.cars?.length > 0)
+    .map(([key, value]) => ({
+      key,
+      title: value.title || key,
+      data: value,
+    }));
 
-    return sections.map(({ key, title, data }) => (
-      <div key={key} className="mb-8 lg:mb-12">
-        <h3 className="text-xl lg:text-2xl font-bold text-gray-800 mb-4">
-          {title}
-        </h3>
-        <Swiper
-          modules={[Autoplay]}
-          spaceBetween={10}
-          slidesPerView={2.2}
-          autoplay={{ delay: 4000, disableOnInteraction: false }}
-          breakpoints={{
-            480: { slidesPerView: 2.5, spaceBetween: 7 },
-            640: { slidesPerView: 2.5, spaceBetween: 7 },
-            768: { slidesPerView: 3, spaceBetween: 16 },
-            1024: { slidesPerView: 4.5, spaceBetween: 20 },
-          }}
-          className="px-4"
-          dir="rtl"
-          touchRatio={1.5}
-          resistance={true}
-          resistanceRatio={0.85}
-          grabCursor={true}
-          speed={800}
-        >
-          {data.cars.map((car: MonthlyCar) => (
-            <SwiperSlide key={car.id} className="mb-5 lg:mb-12">
-              <CarCard
-                car={car}
-                period="شهرياً"
-                onClick={() => handleCarClick(car.id, car.office?.id)}
-              />
-            </SwiperSlide>
-          ))}
-        </Swiper>
-      </div>
-    ));
-  };
+  return (
+    <>
+      {/* عرض أيقونات التاجير الشهري */}
+      <IconsFeatures />
+      
+      {/* عرض السيارات حسب الأقسام */}
+      {sections.map(({ key, title, data }) => (
+        <div key={key} className="mb-8 lg:mb-12">
+          <h3 className="text-xl lg:text-2xl font-bold text-gray-800 my-2">
+            {title}
+          </h3>
+          <Swiper
+            modules={[Autoplay]}
+            spaceBetween={10}
+            slidesPerView={2.2}
+            autoplay={{ delay: 4000, disableOnInteraction: false }}
+            breakpoints={{
+              480: { slidesPerView: 2.5, spaceBetween: 7 },
+              640: { slidesPerView: 2.5, spaceBetween: 7 },
+              768: { slidesPerView: 3, spaceBetween: 16 },
+              1024: { slidesPerView: 4.5, spaceBetween: 20 },
+            }}
+            className="px-4 max-h-75 md:max-h-87 lg:max-h-112"
+            dir="rtl"
+            touchRatio={1.5}
+            resistance={true}
+            resistanceRatio={0.85}
+            grabCursor={true}
+            speed={800}
+          >
+            {data.cars.map((car: MonthlyCar) => (
+              <SwiperSlide key={car.id} className="mb-5 lg:mb-12">
+                <CarCard
+                  car={car}
+                  period="شهرياً"
+                  onClick={() => handleCarClick(car.id, car.office?.id)}
+                />
+              </SwiperSlide>
+            ))}
+          </Swiper>
+        </div>
+      ))}
+    </>
+  );
+};
 
   if (loading) {
     return (
@@ -378,7 +387,7 @@ export default function FeaturedCars() {
         {activeTab === "daily" ? (
           providerGroups.length > 0 ? (
             providerGroups.map((group) => (
-              <div key={group.providerId} className="mb-12">
+              <div key={group.providerId} className="mb-10">
                 <ProviderStats provider={group} />
 
                 {group.cars.length > 0 ? (
@@ -393,7 +402,7 @@ export default function FeaturedCars() {
                       768: { slidesPerView: 3, spaceBetween: 16 },
                       1024: { slidesPerView: 4.5, spaceBetween: 20 },
                     }}
-                    className="px-4"
+                    className="px-4  max-h-75 md:max-h-87 lg:max-h-112"
                     dir="rtl"
                     touchRatio={1.5}
                     resistance={true}
@@ -402,7 +411,7 @@ export default function FeaturedCars() {
                     speed={800}
                   >
                     {group.cars.map((car) => (
-                      <SwiperSlide key={car.id} className="mb-5 lg:mb-12">
+                      <SwiperSlide key={car.id} className="mb-1">
                         <CarCard
                           car={car}
                           period="يومياً"

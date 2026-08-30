@@ -1,7 +1,7 @@
 // import { BookingDetailResponse, BookingsResponse } from "../types/api";
 
 // // تكوين الـ API
-// const BASE_URL = "https://admin.masheha.com/api";
+// const BASE_URL = "https://dev.masheha.com/api";
 
 // // دالة للحصول على التوكن
 // function getToken(): string | null {
@@ -439,7 +439,7 @@ export interface BookingDetail {
 }
 
 // تكوين الـ API
-const BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://admin.masheha.com/api';
+const BASE_URL = 'https://dev.masheha.com/api';
 
 // دالة للحصول على التوكن
 function getToken(): string | null {

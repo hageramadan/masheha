@@ -64,7 +64,7 @@ export default function HeroSliderSwiper() {
           disableOnInteraction: false,
         }}
         loop={true}
-        className="h-125 md:h-150 lg:h-175"
+       className="h-[35vh] md:h-[45vh] lg:h-[55vh]"
         dir="rtl"
         
         touchRatio={1.5}          

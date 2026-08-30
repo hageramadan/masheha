@@ -16,7 +16,7 @@ interface UpdatePaymentStatusResponse {
 }
 
 export class UpdatePaymentStatusService {
-  private static baseURL: string = 'https://admin.masheha.com/api';
+  private static baseURL: string = 'https://dev.masheha.com/api';
 
   static async updatePaymentStatus(
     params: UpdatePaymentStatusParams,

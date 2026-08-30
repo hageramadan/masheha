@@ -88,7 +88,7 @@ export default function Stats({
           </div>
 
           <div className="grid grid-cols-1 gap-0 lg:gap-1">
-            <div className="flex flex-col lg:flex-row justify-center items-center">
+            <div className="flex flex-col lg:flex-row justify-center items-center gap-0 lg:gap-2">
               <TbBrandSupabase className="text-lg lg:text-3xl text-orange-300" />
               <div className="flex flex-col justify-center items-center">
                 <div className="text-xs lg:text-sm font-bold text-[#212121]">
@@ -102,7 +102,7 @@ export default function Stats({
           </div>
 
           <div className="grid grid-cols-1 gap-0 lg:gap-1 items-center">
-            <div className="flex flex-col lg:flex-row justify-center items-center">
+            <div className="flex flex-col lg:flex-row justify-center items-center  gap-0 lg:gap-2">
               <IoShieldCheckmarkOutline className="text-lg lg:text-2xl font-bold text-[#34C759]" />
               <div className="flex flex-col justify-center items-center">
                 <div className="text-xs lg:text-sm font-bold text-[#212121]">
@@ -116,7 +116,7 @@ export default function Stats({
           </div>
 
           <div className="grid grid-cols-1 gap-0 lg:gap-1 items-center">
-            <div className="flex flex-col lg:flex-row justify-center items-center">
+            <div className="flex flex-col lg:flex-row justify-center items-center  gap-0 lg:gap-2">
               <FaRegSmileBeam className="text-lg lg:text-2xl text-[#34C759]" />
               <div className="flex flex-col justify-center items-center">
                 <div className="text-xs lg:text-sm font-bold text-[#212121]">
@@ -134,7 +134,7 @@ export default function Stats({
           {features.map((feature, index) => (
             <div
               key={index}
-              className="flex items-center gap-1 lg:gap-3 p-1 lg:p-4 bg-[#0127380A] rounded-[8px] hover:bg-gray-200 transition-colors"
+              className="flex items-center justify-center gap-1 lg:gap-3 p-1 lg:p-4 bg-[#0127380A] rounded-[8px] hover:bg-gray-200 transition-colors"
             >
               <div className="">{feature.icon}</div>
               <div>
