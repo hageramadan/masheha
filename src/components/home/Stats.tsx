@@ -51,8 +51,8 @@ export default function Stats({
   }, []);
 
   return (
-    <section className="py-4 bg-white" data-stats-loaded>
-      <div className="container mx-auto px-1 lg:px-4">
+    <section className="py-4 bg-white mx-2 lg:mx-auto" data-stats-loaded>
+      <div className="container  px-1 lg:px-4">
         <div className="grid grid-cols-5 lg:grid-cols-4 gap-1 lg:gap-6 mb-4">
           <div className="flex col-span-2 lg:col-span-1">
             <Image
