@@ -17,7 +17,7 @@ export default function LoadingScreen({ isLoading }: LoadingScreenProps) {
       </div>
       <div className="relative mt-8">
         <Image
-          src="/logo.png"
+          src="/logo1.png"
           alt="شعار الشركة"
           width={180}
           height={80}

@@ -77,7 +77,7 @@ export default function Navbar() {
               aria-label="الذهاب إلى الصفحة الرئيسية"
             >
               <Image
-                src="/logo.png"
+                src="/logo1.png"
                 alt="شعار الموقع - اضغط للذهاب إلى الرئيسية"
                 width={155}
                 height={72}

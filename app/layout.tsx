@@ -18,7 +18,7 @@ export const metadata: Metadata = {
   title: "مشيها",
   description: "أفضل خدمة لتأجير السيارات في المنطقة",
   icons: {
-    icon: [{ url: "/logo.png", type: "image/png" }],
+    icon: [{ url: "/logo1.png", type: "image/png" }],
   },
 };
 

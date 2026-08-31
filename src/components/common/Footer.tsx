@@ -47,7 +47,7 @@ export default function Footer() {
           phone: "0566666364",
           email: "Masheha.sa@gmail.com",
           name: "مشيها",
-          light_logo: "/logo.png",
+          light_logo: "/logo1.png",
         });
       } finally {
         setLoading(false);
@@ -104,7 +104,7 @@ export default function Footer() {
           {/* الشعار - بدون تغيير */}
           <div className="col-span-2 lg:col-span-1">
             <Image
-              src={"/logo.png"}
+              src={"/logo1.png"}
               alt={settings?.name || "CarRent Logo"}
               width={250}
               height={50}
