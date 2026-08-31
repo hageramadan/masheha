@@ -78,7 +78,7 @@ export default function IconsFeatures() {
   const remainingIcons = icons.slice(4, 7);
 
   return (
-    <div className="bg-white py-4 px-2 rounded-xl my-4 lg:my-8">
+    <div className="bg-white py-4 px-1 lg:px-2 rounded-xl my-4 lg:my-8 mx-2 lg:mx-auto">
     
 <div className="grid grid-cols-4 gap-1 lg:gap-4 mb-2">
   {firstFourIcons.map((icon, index) => (
