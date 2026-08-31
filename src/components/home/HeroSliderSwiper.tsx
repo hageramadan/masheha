@@ -7,13 +7,50 @@ import 'swiper/css';
 import 'swiper/css/pagination';
 import 'swiper/css/effect-fade';
 
+// const slides = [
+//   {
+//     id: 1,
+//     title: 'استأجر سيارتك المثالية',
+//     subtitle: 'نوفر لك أفضل خدمات تأجير السيارات بأسعار تنافسية وخطوات بسيطة',
+//     buttonText: 'ابدأ الحجز الآن',
+//     image: '/images/hero.png',
+//     color: 'from-blue-600 to-blue-800',
+//   },
+//    {
+//     id: 2,
+//     title: 'استأجر سيارتك المثالية',
+//     subtitle: 'نوفر لك أفضل خدمات تأجير السيارات بأسعار تنافسية وخطوات بسيطة',
+//     buttonText: 'ابدأ الحجز الآن',
+//     image: '/images/cars/c1.webp',
+//     color: 'from-blue-600 to-blue-800',
+//   },
+  
+//    {
+//     id: 3,
+//     title: 'استأجر سيارتك المثالية',
+//     subtitle: 'نوفر لك أفضل خدمات تأجير السيارات بأسعار تنافسية وخطوات بسيطة',
+//     buttonText: 'ابدأ الحجز الآن',
+//     image: '/images/cars/c3.jpg',
+//     color: 'from-blue-600 to-blue-800',
+//   },
+//    {
+//     id: 5,
+//     title: 'استأجر سيارتك المثالية',
+//     subtitle: 'نوفر لك أفضل خدمات تأجير السيارات بأسعار تنافسية وخطوات بسيطة',
+//     buttonText: 'ابدأ الحجز الآن',
+//     image: '/images/cars/c4.jpg',
+//     color: 'from-blue-600 to-blue-800',
+//   },
+
+// ];
+
 const slides = [
   {
     id: 1,
     title: 'استأجر سيارتك المثالية',
     subtitle: 'نوفر لك أفضل خدمات تأجير السيارات بأسعار تنافسية وخطوات بسيطة',
     buttonText: 'ابدأ الحجز الآن',
-    image: '/images/hero.png',
+    image: '/images/cars/cars5.jpg',
     color: 'from-blue-600 to-blue-800',
   },
    {
@@ -21,16 +58,7 @@ const slides = [
     title: 'استأجر سيارتك المثالية',
     subtitle: 'نوفر لك أفضل خدمات تأجير السيارات بأسعار تنافسية وخطوات بسيطة',
     buttonText: 'ابدأ الحجز الآن',
-    image: '/images/cars/c1.webp',
-    color: 'from-blue-600 to-blue-800',
-  },
-  
-   {
-    id: 3,
-    title: 'استأجر سيارتك المثالية',
-    subtitle: 'نوفر لك أفضل خدمات تأجير السيارات بأسعار تنافسية وخطوات بسيطة',
-    buttonText: 'ابدأ الحجز الآن',
-    image: '/images/cars/c3.jpg',
+    image: '/images/cars/cars7.jpg',
     color: 'from-blue-600 to-blue-800',
   },
    {
@@ -38,12 +66,11 @@ const slides = [
     title: 'استأجر سيارتك المثالية',
     subtitle: 'نوفر لك أفضل خدمات تأجير السيارات بأسعار تنافسية وخطوات بسيطة',
     buttonText: 'ابدأ الحجز الآن',
-    image: '/images/cars/c4.jpg',
+    image: '/images/cars/cars5.jpg',
     color: 'from-blue-600 to-blue-800',
   },
 
 ];
-
 export default function HeroSliderSwiper() {
  
 
@@ -64,7 +91,7 @@ export default function HeroSliderSwiper() {
           disableOnInteraction: false,
         }}
         loop={true}
-       className="h-[35vh] md:h-[45vh] lg:h-[55vh]"
+       className="h-[55vh] md:h-[65vh] lg:h-[65vh]"
         dir="rtl"
         
         touchRatio={1.5}          
@@ -80,7 +107,7 @@ export default function HeroSliderSwiper() {
                 src={slide.image}
                 alt={slide.title}
                 fill
-                className="object-cover"
+                className="object-cover object-center"
                 priority
               />
               <div className={`absolute inset-0 bg-black/50 opacity-75`} />

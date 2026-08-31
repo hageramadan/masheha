@@ -21,7 +21,7 @@ export default function Footer() {
     const fetchSettings = async () => {
       try {
         const response = await fetch(
-          `${process.env.NEXT_PUBLIC_API_URL}/settings`,
+          `https://admin.masheha.com/api/settings`,
           {
             method: "GET",
             headers: {

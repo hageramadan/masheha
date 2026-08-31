@@ -1,4 +1,5 @@
 "use client";
+import { useEffect } from "react";
 import { FaStar } from "react-icons/fa";
 import { CiDeliveryTruck } from "react-icons/ci";
 import { TbClockHour3 } from "react-icons/tb";
@@ -44,8 +45,13 @@ export default function Stats({
     },
   ],
 }: StatsProps) {
+  // إضافة علامة في DOM فور تحميل المكون
+  useEffect(() => {
+    console.log("✅ Stats component mounted!");
+  }, []);
+
   return (
-    <section className="py-4 bg-white">
+    <section className="py-4 bg-white" data-stats-loaded>
       <div className="container mx-auto px-1 lg:px-4">
         <div className="grid grid-cols-5 lg:grid-cols-4 gap-1 lg:gap-6 mb-4">
           <div className="flex col-span-2 lg:col-span-1">
@@ -61,27 +67,20 @@ export default function Stats({
                 <div className="text-[12px] lg:text-xl font-bold text-primary">
                   {providerName}
                 </div>
-                {/* {isVerified && (
-                  <div className="hidden lg:flex items-center justify-center gap-1 px-1 lg:px-2 bg-[#34C75929] text-[#34C759] py-1 lg:py-2 w-fit rounded-sm">
-                    <IoIosCheckmarkCircleOutline />
-                    <p className="font-semibold text-xs lg:text-sm">موثق</p>
-                  </div>
-                )} */}
               </div>
               <div className="flex items-center gap-1 lg:gap-2">
                 <p className="font-bold text-[6px] md:text-[12px] text-gray-600 mt-1">
                   {city} - {district} 
-                  
                 </p>
                 <span className="text-sm lg:text-lg text-gray-600">|</span>
                 <div className="flex items-center gap-0.5 lg:gap-1">
                   <FaStar className="text-orange-300 text-[10px] lg:text-2xl" />
-                <span className="text-[10px] lg:text-sm">{averageRating}</span>
-                {countReviews > 0 && (
-                  <span className="text-[8px] lg:text-xs text-gray-400">
-                    ({countReviews} تقييم)
-                  </span>
-                )}
+                  <span className="text-[10px] lg:text-sm">{averageRating}</span>
+                  {countReviews > 0 && (
+                    <span className="text-[8px] lg:text-xs text-gray-400">
+                      ({countReviews} تقييم)
+                    </span>
+                  )}
                 </div>
               </div>
             </div>

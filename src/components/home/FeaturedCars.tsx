@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { Swiper, SwiperSlide } from "swiper/react";
 import { Autoplay } from "swiper/modules";
 import { Card, CardContent } from "@/src/ui/card";
@@ -131,15 +131,12 @@ function CarCard({
         <div className="mt-4">
           <div className="flex flex-col items-center justify-center gap-1">
             <div className="flex items-center justify-center gap-2">
-              {/* <p className="text-[#A7A7A7] text-sm md:text-base font-bold">
-                {year}
-              </p> */}
               <h3 className="text-sm lg:text-xl font-bold text-primary line-clamp-1">
                 {name}
               </h3>
             </div>
             <span className="w-full border-b border-gray-200 mb-1 md:mb-8 pb-2 md:pb-4 text-center text-[#0079AB] font-bold text-sm md:text-base">
-              {/* {brand} */}   {year}
+              {year}
             </span>
           </div>
 
@@ -158,7 +155,11 @@ function CarCard({
   );
 }
 
-export default function FeaturedCars() {
+interface FeaturedCarsProps {
+  onLoad?: () => void;
+}
+
+export default function FeaturedCars({ onLoad }: FeaturedCarsProps) {
   const router = useRouter();
   const [activeTab, setActiveTab] = useState("daily");
   const [providerGroups, setProviderGroups] = useState<ProviderGroup[]>([]);
@@ -167,11 +168,76 @@ export default function FeaturedCars() {
   );
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [isDataLoaded, setIsDataLoaded] = useState(false);
+  const hasCalledOnLoad = useRef(false);
 
-  const fetchData = async (tab: string) => {
-    setLoading(true);
-    setError(null);
+  // ✅ استدعاء onLoad بعد تحميل البيانات وظهور Stats في DOM
+  useEffect(() => {
+    if (!loading && !error && !hasCalledOnLoad.current && onLoad) {
+      const hasData = (activeTab === "daily" && providerGroups.length > 0) || 
+                    (activeTab === "monthly" && monthlyData !== null);
+      
+      if (hasData) {
+        console.log("✅ FeaturedCars: Data loaded! Waiting for Stats to mount...");
+        hasCalledOnLoad.current = true;
+        setIsDataLoaded(true);
+        
+        // ننتظر ظهور Stats في DOM
+        const checkStats = () => {
+          const statsElement = document.querySelector('[data-stats-loaded]');
+          if (statsElement) {
+            console.log("✅ Stats found in DOM! Calling onLoad...");
+            onLoad();
+            return true;
+          }
+          return false;
+        };
+
+        // نفحص فوراً
+        if (checkStats()) return;
+
+        // نفحص كل 100ms لمدة 3 ثواني
+        let attempts = 0;
+        const maxAttempts = 30; // 30 * 100ms = 3 seconds
+        const interval = setInterval(() => {
+          attempts++;
+          if (checkStats() || attempts >= maxAttempts) {
+            clearInterval(interval);
+            if (attempts >= maxAttempts) {
+              console.log("⚠️ Stats not found after 3 seconds, calling onLoad anyway...");
+              onLoad();
+            }
+          }
+        }, 100);
+
+        return () => clearInterval(interval);
+      }
+    }
+  }, [loading, error, activeTab, providerGroups, monthlyData, onLoad]);
+
+  // إذا لم توجد بيانات ولكن التحميل انتهى
+  useEffect(() => {
+    if (!loading && !error && !hasCalledOnLoad.current && onLoad) {
+      const hasData = (activeTab === "daily" && providerGroups.length > 0) || 
+                    (activeTab === "monthly" && monthlyData !== null);
+      
+      if (!hasData) {
+        console.log("⚠️ FeaturedCars: No data but loading finished. Calling onLoad after delay...");
+        hasCalledOnLoad.current = true;
+        setIsDataLoaded(true);
+        
+        setTimeout(() => {
+          onLoad();
+        }, 500);
+      }
+    }
+  }, [loading, error, activeTab, providerGroups, monthlyData, onLoad]);
+
+  // استخدام useCallback لتثبيت الدالة
+  const fetchData = useCallback(async (tab: string) => {
     try {
+      setLoading(true);
+      setError(null);
       if (tab === "daily") {
         const data = await CarService.getDailyCarsRaw();
         const groups = transformToProviderGroups(data);
@@ -188,7 +254,7 @@ export default function FeaturedCars() {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   const transformToProviderGroups = (
     data: DailyCarsResponse[],
@@ -256,9 +322,10 @@ export default function FeaturedCars() {
     }));
   };
 
+  // تحميل البيانات عند تغيير التاب
   useEffect(() => {
     fetchData(activeTab);
-  }, [activeTab]);
+  }, [activeTab, fetchData]);
 
   const handleCarClick = (carId: string | number, providerId?: number) => {
     if (!carId) {
@@ -272,70 +339,66 @@ export default function FeaturedCars() {
     }
 
     const url = `/cars/${carId}?type=${activeTab}&officeId=${providerId}`;
-
     router.push(url);
   };
 
   const renderMonthlySections = () => {
-  if (!monthlyData) return null;
+    if (!monthlyData) return null;
 
-  const sections = Object.entries(monthlyData)
-    .filter(([key, value]) => value?.cars?.length > 0)
-    .map(([key, value]) => ({
-      key,
-      title: value.title || key,
-      data: value,
-    }));
+    const sections = Object.entries(monthlyData)
+      .filter(([key, value]) => value?.cars?.length > 0)
+      .map(([key, value]) => ({
+        key,
+        title: value.title || key,
+        data: value,
+      }));
 
-  return (
-    <>
-      {/* عرض أيقونات التاجير الشهري */}
-      <IconsFeatures />
-      
-      {/* عرض السيارات حسب الأقسام */}
-      {sections.map(({ key, title, data }) => (
-        <div key={key} className="mb-8 lg:mb-12">
-          <h3 className="text-xl lg:text-2xl font-bold text-gray-800 my-2">
-            {title}
-          </h3>
-          <Swiper
-            modules={[Autoplay]}
-            spaceBetween={10}
-            slidesPerView={2.2}
-            autoplay={{ delay: 4000, disableOnInteraction: false }}
-            breakpoints={{
-              480: { slidesPerView: 2.5, spaceBetween: 7 },
-              640: { slidesPerView: 2.5, spaceBetween: 7 },
-              768: { slidesPerView: 3, spaceBetween: 16 },
-              1024: { slidesPerView: 4.5, spaceBetween: 20 },
-            }}
-            className="px-4 max-h-75 md:max-h-87 lg:max-h-112"
-            dir="rtl"
-            touchRatio={1.5}
-            resistance={true}
-            resistanceRatio={0.85}
-            grabCursor={true}
-            speed={800}
-          >
-            {data.cars.map((car: MonthlyCar) => (
-              <SwiperSlide key={car.id} className="mb-5 lg:mb-12">
-                <CarCard
-                  car={car}
-                  period="شهرياً"
-                  onClick={() => handleCarClick(car.id, car.office?.id)}
-                />
-              </SwiperSlide>
-            ))}
-          </Swiper>
-        </div>
-      ))}
-    </>
-  );
-};
+    return (
+      <>
+        <IconsFeatures />
+        {sections.map(({ key, title, data }) => (
+          <div key={key} className="mb-8 lg:mb-12">
+            <h3 className="text-xl lg:text-2xl font-bold text-gray-800 my-2">
+              {title}
+            </h3>
+            <Swiper
+              modules={[Autoplay]}
+              spaceBetween={10}
+              slidesPerView={2.2}
+              autoplay={{ delay: 4000, disableOnInteraction: false }}
+              breakpoints={{
+                480: { slidesPerView: 2.5, spaceBetween: 7 },
+                640: { slidesPerView: 2.5, spaceBetween: 7 },
+                768: { slidesPerView: 3, spaceBetween: 16 },
+                1024: { slidesPerView: 4.5, spaceBetween: 20 },
+              }}
+              className="px-4 max-h-75 md:max-h-87 lg:max-h-112"
+              dir="rtl"
+              touchRatio={1.5}
+              resistance={true}
+              resistanceRatio={0.85}
+              grabCursor={true}
+              speed={800}
+            >
+              {data.cars.map((car: MonthlyCar) => (
+                <SwiperSlide key={car.id} className="mb-5 lg:mb-12">
+                  <CarCard
+                    car={car}
+                    period="شهرياً"
+                    onClick={() => handleCarClick(car.id, car.office?.id)}
+                  />
+                </SwiperSlide>
+              ))}
+            </Swiper>
+          </div>
+        ))}
+      </>
+    );
+  };
 
   if (loading) {
     return (
-      <div className="py-12">
+      <div className="py-12" data-featured-cars-loading>
         <div className="container mx-auto px-4">
           <div className="flex justify-center items-center min-h-100">
             <div className="text-center">
@@ -348,16 +411,18 @@ export default function FeaturedCars() {
   }
 
   if (error) {
-    return null;
+    return (
+      <div className="py-12" data-featured-cars-error>
+        <div className="container mx-auto px-4 text-center">
+          <p className="text-red-500">{error}</p>
+        </div>
+      </div>
+    );
   }
 
   return (
-    <section className="py-2 pt-4 lg:pt-8">
+    <section className="py-2 pt-4 lg:pt-8" data-featured-cars-loaded>
       <div className="container mx-auto px-2">
-        {/* <h2 className="text-2xl md:text-4xl font-bold mb-4 text-primary">
-          احجز الان
-        </h2> */}
-
         <div className="flex justify-center gap-4 mb-10">
           <Button
             onClick={() => setActiveTab("daily")}
