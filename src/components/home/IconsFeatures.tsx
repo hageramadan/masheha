@@ -32,7 +32,7 @@ export default function IconsFeatures() {
       setLoading(true);
       setError(null);
       try {
-        const response = await fetch("https://dev.masheha.com/api/icons", {
+        const response = await fetch("https://admin.masheha.com/api/icons", {
           headers: {
             "accept-language": "ar",
           },

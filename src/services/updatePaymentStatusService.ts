@@ -16,20 +16,20 @@ interface UpdatePaymentStatusResponse {
 }
 
 export class UpdatePaymentStatusService {
-  private static baseURL: string = 'https://dev.masheha.com/api';
+  private static baseURL: string = 'https://admin.masheha.com/api';
 
   static async updatePaymentStatus(
     params: UpdatePaymentStatusParams,
     token: string
   ): Promise<boolean> {
-    // ✅ التحقق من وجود UUID
+    // التحقق من وجود UUID
     if (!params.order_uuid || params.order_uuid.trim().length === 0) {
       console.error('❌ UUID is empty');
       return false;
     }
 
     try {
-      // ✅ إعداد المعاملات
+      // إعداد المعاملات
       const parameters: Record<string, any> = {
         order_uuid: params.order_uuid,
         payment_status: params.payment_status,
@@ -42,7 +42,7 @@ export class UpdatePaymentStatusService {
 
       console.log('📤 Updating payment status with params:', parameters);
 
-      // ✅ استدعاء الـ API
+      // استدعاء الـ API
       const response = await fetch(
         `${this.baseURL}/orders/update-payment-status`,
         {
@@ -67,19 +67,19 @@ export class UpdatePaymentStatusService {
 
      
       if (data.result === true) {
-        console.log('✅ Payment status updated successfully (result: true)');
+        console.log('Payment status updated successfully (result: true)');
         return true;
       }
       
       // 2. errNum === 200 (نجاح)
       if (data.errNum === 200) {
-        console.log('✅ Payment status updated successfully (errNum: 200)');
+        console.log('Payment status updated successfully (errNum: 200)');
         return true;
       }
 
       // 3. وجود data (يعني نجاح)
       if (data.data !== undefined && data.data !== null) {
-        console.log('✅ Payment status updated successfully (data exists)');
+        console.log('Payment status updated successfully (data exists)');
         return true;
       }
 
@@ -88,7 +88,7 @@ export class UpdatePaymentStatusService {
         const successKeywords = ['success', 'تم', 'نجاح', 'successfully', 'updated'];
         const messageLower = data.message.toLowerCase();
         if (successKeywords.some(keyword => messageLower.includes(keyword))) {
-          console.log('✅ Payment status updated successfully (message contains success keyword)');
+          console.log('Payment status updated successfully (message contains success keyword)');
           return true;
         }
       }

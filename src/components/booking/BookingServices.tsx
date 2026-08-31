@@ -17,7 +17,7 @@ export default function BookingServices({
 }: BookingServicesProps) {
   if (services.length === 0) return null;
 
-  // ✅ التأكد من أن أول خدمة محددة دائمًا
+  // التأكد من أن أول خدمة محددة دائمًا
   useEffect(() => {
     if (services.length > 0) {
       const firstServiceId = services[0].id;

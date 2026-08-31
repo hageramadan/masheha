@@ -56,11 +56,11 @@ export interface Car {
     email: string;
     rating: number;
   };
-  // ✅ إضافة الشروط والمزايا
+  // إضافة الشروط والمزايا
   terms?: RentalTerms;
 }
 
-// ✅ أنواع الشروط والمزايا
+// أنواع الشروط والمزايا
 export interface RentalTerms {
   conditions: string[];      // شروط التأجير
   advantages: string[];      // مزايا التأجير

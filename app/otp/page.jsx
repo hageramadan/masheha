@@ -54,7 +54,7 @@ export default function OtpPage() {
       toast.error(' يرجى إدخال الرمز المكون من 6 أرقام');
       return;
     }
-    toast.success('✅ تم التحقق بنجاح!');
+    toast.success('تم التحقق بنجاح!');
     // توجيه إلى الصفحة الرئيسية أو لوحة التحكم
     window.location.href = '/';
   };

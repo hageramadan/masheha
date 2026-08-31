@@ -66,7 +66,7 @@ export const mockCar: Car = {
     email: 'info@carrent.com',
     rating: 4.9,
   },
-  // ✅ شروط ومزايا التأجير
+  // شروط ومزايا التأجير
   terms: {
     conditions: [
       'العمر 25 سنة وأكثر',

@@ -31,7 +31,7 @@ interface ExtendedTotals {
   totalDays: number;
 }
 
-// ✅ دالة لتفريغ بيانات الحجز
+// دالة لتفريغ بيانات الحجز
 const getEmptyBookingData = (carId: string): BookingData => ({
   ...getInitialBookingData(carId),
   customerName: "",
@@ -86,7 +86,7 @@ export const useBookingForm = (
   );
   const [isCalculating, setIsCalculating] = useState(false);
 
-  // ✅ تخزين الـ period_id المختار (للحجز الشهري)
+  // تخزين الـ period_id المختار (للحجز الشهري)
   const [selectedPeriodId, setSelectedPeriodId] = useState<number | null>(null);
 
   // Load Services
@@ -143,7 +143,7 @@ export const useBookingForm = (
           selectedServiceIds.length > 0 ? selectedServiceIds : undefined,
       };
 
-      // ✅ إضافة period_id إذا كان موجوداً (للحجز الشهري)
+      // إضافة period_id إذا كان موجوداً (للحجز الشهري)
       if (bookingType === "monthly" && selectedPeriodId) {
         params.period_id = selectedPeriodId;
       }
@@ -300,7 +300,7 @@ export const useBookingForm = (
     return Object.keys(newErrors).length === 0;
   }, [bookingData]);
 
-  // ✅ دالة لتفريغ بيانات النموذج (بما في ذلك رقم الهاتف)
+  // دالة لتفريغ بيانات النموذج (بما في ذلك رقم الهاتف)
   const resetForm = useCallback(() => {
     setBookingData(getEmptyBookingData(carId));
     setPriceData(null);
@@ -311,7 +311,7 @@ export const useBookingForm = (
     setSelectedPeriodId(null);
   }, [carId]);
 
-  // ✅ دالة لتعيين period_id (للحجز الشهري)
+  // دالة لتعيين period_id (للحجز الشهري)
   const setPeriodId = useCallback((periodId: number) => {
     setSelectedPeriodId(periodId);
   }, []);
@@ -377,7 +377,7 @@ export const useBookingForm = (
         periodId: selectedPeriodId,
       };
 
-      // ✅ 1. إنشاء الحجز
+      // 1. إنشاء الحجز
       const bookingResult = await BookingService.submitBooking(
         bookingDataWithExtra,
         {
@@ -399,19 +399,19 @@ export const useBookingForm = (
         return null;
       }
 
-      // ✅ عرض توستر نجاح الحجز
-      toast.success("🎉 تم إنشاء الحجز بنجاح!", {
-        duration: 4000,
-        position: "top-center",
-      });
+      // عرض توستر نجاح الحجز
+      // toast.success("🎉 تم إنشاء الحجز بنجاح!", {
+      //   duration: 4000,
+      //   position: "top-center",
+      // });
 
       // ❌ تم إزالة تحديث حالة الدفع إلى pending من هنا
       // سيتم التحديث في صفحة payment-callback بعد العودة من بوابة الدفع
 
-      // ✅ 3. معالجة الدفع
+      // 3. معالجة الدفع
       setIsRedirecting(true);
 
-      // ✅ بناء روابط العودة
+      // بناء روابط العودة
       const baseUrl = process.env.NEXT_PUBLIC_APP_URL || window.location.origin;
       const callbackUrl = `${baseUrl}/payment-callback`;
       const successUrl = `${baseUrl}/booking-success`;
@@ -434,13 +434,13 @@ export const useBookingForm = (
         token,
       );
 
-      console.log("✅ Payment Result:", paymentResult);
+      console.log("Payment Result:", paymentResult);
 
       if (paymentResult.success) {
         resetForm();
 
         if (paymentResult.isCash) {
-          // ✅ الدفع النقدي: يتم التحديث فوراً (لأنه لا يوجد بوابة دفع)
+          // الدفع النقدي: يتم التحديث فوراً (لأنه لا يوجد بوابة دفع)
           await UpdatePaymentStatusService.updatePaymentSuccess(
             bookingResult.uuid || uuid,
             paymentMethodId,
@@ -448,7 +448,7 @@ export const useBookingForm = (
             token,
           );
 
-          toast.success("✅ تم اختيار الدفع النقدي عند الاستلام", {
+          toast.success("تم اختيار الدفع النقدي عند الاستلام", {
             duration: 3000,
             position: "top-center",
           });
@@ -462,7 +462,7 @@ export const useBookingForm = (
 
           return { ...bookingResult, isCash: true };
         } else if (paymentResult.paymentUrl) {
-          // ✅ الدفع الإلكتروني: التوجيه إلى بوابة الدفع
+          // الدفع الإلكتروني: التوجيه إلى بوابة الدفع
           toast.success("🔄 جاري توجيهك إلى بوابة الدفع...", {
             duration: 3000,
             position: "top-center",
@@ -477,7 +477,7 @@ export const useBookingForm = (
             return null;
           }
 
-          // ✅ لا نقوم بتحديث الحالة هنا، بل نتركها لصفحة callback
+          // لا نقوم بتحديث الحالة هنا، بل نتركها لصفحة callback
           setTimeout(() => {
             window.location.href = paymentUrl;
           }, 1000);

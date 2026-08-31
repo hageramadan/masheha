@@ -122,7 +122,7 @@ export default function BookingForm({
 
   const minimumDays = car?.minimumDays || car?.minimum_days || 1;
 
-  // ✅ دالة التحقق من صحة النموذج بالكامل
+  // دالة التحقق من صحة النموذج بالكامل
   const validateForm = useCallback(() => {
     const name = bookingData.customerName?.trim();
     const phone = bookingData.customerPhone?.trim();
@@ -335,7 +335,7 @@ export default function BookingForm({
   // 1️⃣ أولاً: تسجيل المستخدم في Backend
   const handleRegisterUser = async () => {
     try {
-      // ✅ التحقق من صحة النموذج قبل التسجيل
+      // التحقق من صحة النموذج قبل التسجيل
       if (!validateForm()) return false;
 
       const name = bookingData.customerName?.trim();
@@ -425,7 +425,7 @@ export default function BookingForm({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    // ✅ التحقق من صحة النموذج بالكامل قبل أي شيء
+    // التحقق من صحة النموذج بالكامل قبل أي شيء
     if (!validateForm()) return;
 
     // 🎯 الترتيب:

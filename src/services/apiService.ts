@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
-const BASE_URL = "https://dev.masheha.com/api";
+const BASE_URL = "https://admin.masheha.com/api";
 
 export class ApiService {
   protected static async request<T>(

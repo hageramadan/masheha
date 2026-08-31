@@ -25,7 +25,7 @@ export default function ContactPage() {
     // محاكاة إرسال البيانات
     await new Promise(resolve => setTimeout(resolve, 1500));
     
-    toast.success('✅ تم إرسال رسالتك بنجاح! سنتواصل معك قريباً');
+    toast.success('تم إرسال رسالتك بنجاح! سنتواصل معك قريباً');
     setFormData({ name: '', email: '', phone: '', subject: '', message: '' });
     setIsLoading(false);
   };

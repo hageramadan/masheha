@@ -12,7 +12,7 @@ export default function CarTerms({ terms }: CarTermsProps) {
     <div className="bg-white rounded-2xl shadow-lg overflow-hidden">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 p-6">
         
-        {/* ✅ شروط التأجير */}
+        {/* شروط التأجير */}
         <div>
           <h3 className="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
             <FaShieldAlt className="text-primary" />
@@ -28,7 +28,7 @@ export default function CarTerms({ terms }: CarTermsProps) {
           </ul>
         </div>
 
-        {/* ✅ مزايا التأجير */}
+        {/* مزايا التأجير */}
         <div>
           <h3 className="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
             <FaTools className="text-primary" />
@@ -46,7 +46,7 @@ export default function CarTerms({ terms }: CarTermsProps) {
 
       </div>
 
-      {/* ✅ ملخص سريع */}
+      {/* ملخص سريع */}
       <div className="border-t border-gray-100 px-6 py-3 bg-gray-50/50">
         <div className="flex flex-wrap items-center gap-4 text-xs text-gray-500">
           <div className="flex items-center gap-2">

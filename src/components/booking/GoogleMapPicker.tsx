@@ -31,7 +31,7 @@ export default function GoogleMapPicker({
   const markerRef = useRef<google.maps.Marker | null>(null);
   const mapInstanceRef = useRef<google.maps.Map | null>(null);
 
-  // ✅ تعريف الدالة أولاً (قبل استخدامها)
+  // تعريف الدالة أولاً (قبل استخدامها)
   const getAddressFromLatLng = async (lat: number, lng: number) => {
     setIsLoading(true);
     try {

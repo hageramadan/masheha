@@ -13,12 +13,12 @@ export const usePhoneAuth = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [isOTPSent, setIsOTPSent] = useState(false);
 
-  // ✅ تهيئة reCAPTCHA
+  // تهيئة reCAPTCHA
   const setupRecaptcha = () => {
     if (typeof window === 'undefined') return null;
     
     try {
-      // ✅ تنظيف أي reCAPTCHA قديم
+      // تنظيف أي reCAPTCHA قديم
       if (window.recaptchaVerifier) {
         try {
           window.recaptchaVerifier.clear();
@@ -28,11 +28,11 @@ export const usePhoneAuth = () => {
         window.recaptchaVerifier = null;
       }
 
-      // ✅ إنشاء reCAPTCHA جديد مع إعدادات واضحة
+      // إنشاء reCAPTCHA جديد مع إعدادات واضحة
       const verifier = new RecaptchaVerifier(auth, 'recaptcha-container', {
-        size: 'visible', // ✅ جرب visible بدل invisible
+        size: 'visible', // جرب visible بدل invisible
         callback: () => {
-          console.log('✅ reCAPTCHA solved');
+          console.log('reCAPTCHA solved');
         },
         'expired-callback': () => {
           console.log('⏰ reCAPTCHA expired');
@@ -56,7 +56,7 @@ export const usePhoneAuth = () => {
 
     setIsLoading(true);
     try {
-      // ✅ تهيئة reCAPTCHA
+      // تهيئة reCAPTCHA
       const verifier = setupRecaptcha();
       if (!verifier) {
         toast.error('حدث خطأ في تهيئة التحقق');
@@ -68,7 +68,7 @@ export const usePhoneAuth = () => {
       const confirmation = await signInWithPhoneNumber(auth, phone, verifier);
       setConfirmationResult(confirmation);
       setIsOTPSent(true);
-      // toast.success('✅ تم إرسال رمز التحقق إلى جوالك');
+      // toast.success('تم إرسال رمز التحقق إلى جوالك');
       return true;
     } catch (error: any) {
       // console.error('❌ Send OTP error:', error);
@@ -103,7 +103,7 @@ export const usePhoneAuth = () => {
     setIsLoading(true);
     try {
       const result = await confirmationResult.confirm(code);
-      // toast.success('✅ تم التحقق بنجاح');
+      // toast.success('تم التحقق بنجاح');
       return result.user;
     } catch (error: any) {
       console.error('❌ Verify OTP error:', error);

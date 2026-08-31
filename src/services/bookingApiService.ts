@@ -1,7 +1,7 @@
 // import { BookingDetailResponse, BookingsResponse } from "../types/api";
 
 // // تكوين الـ API
-// const BASE_URL = "https://dev.masheha.com/api";
+// const BASE_URL = "https://admin.masheha.com/api";
 
 // // دالة للحصول على التوكن
 // function getToken(): string | null {
@@ -439,7 +439,7 @@ export interface BookingDetail {
 }
 
 // تكوين الـ API
-const BASE_URL = 'https://dev.masheha.com/api';
+const BASE_URL = 'https://admin.masheha.com/api';
 
 // دالة للحصول على التوكن
 function getToken(): string | null {
@@ -449,7 +449,7 @@ function getToken(): string | null {
   return null;
 }
 
-// ✅ إصلاح: دالة مساعدة للـ Request
+// إصلاح: دالة مساعدة للـ Request
 async function request<T>(
   endpoint: string,
   options: RequestInit = {}

@@ -6,7 +6,7 @@ import Footer from "@/src/components/common/Footer";
 import { Toaster } from "react-hot-toast";
 import { AuthProvider } from "@/src/context/AuthContext";
 
-// ✅ تحميل خط Almarai العربي
+// تحميل خط Almarai العربي
 const almarai = Almarai({
   variable: "--font-almarai",
   subsets: ["arabic"],
@@ -15,7 +15,7 @@ const almarai = Almarai({
 });
 
 export const metadata: Metadata = {
-  title: "تأجير السيارات",
+  title: "مشيها",
   description: "أفضل خدمة لتأجير السيارات في المنطقة",
   icons: {
     icon: [{ url: "/logo.png", type: "image/png" }],

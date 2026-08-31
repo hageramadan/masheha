@@ -23,7 +23,7 @@ export default function LoginPage() {
       return;
     }
     
-    toast.success('✅ تم إرسال رمز التحقق');
+    toast.success('تم إرسال رمز التحقق');
     window.location.href = `/otp?phone=${phoneNumber}&code=${countryCode}`;
   };
 

@@ -108,17 +108,17 @@ export default function PaymentPopup({
       
         <div className="p-4 space-y-3 overflow-y-auto max-h-96">
           {isLoading ? (
-            // ✅ حالة التحميل
+            // حالة التحميل
             <div className="flex items-center justify-center py-8">
               <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin"></div>
             </div>
           ) : paymentMethods.length === 0 ? (
-            // ✅ لا توجد طرق دفع
+            // لا توجد طرق دفع
             <div className="text-center py-8 text-gray-500">
               لا توجد طرق دفع متاحة حالياً
             </div>
           ) : (
-            // ✅ عرض طرق الدفع من الـ API
+            // عرض طرق الدفع من الـ API
             paymentMethods.map((method) => {
               const isSelected = tempSelected === method.id;
 

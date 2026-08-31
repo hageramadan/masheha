@@ -2,7 +2,7 @@
 import { initializeApp, getApps, getApp } from 'firebase/app';
 import { getAuth } from 'firebase/auth';
 
-// ✅ Config بتاعك
+// Config بتاعك
 const firebaseConfig = {
   apiKey: "AIzaSyBVuyHmcAtndLiaQIG9JALuEiD4WfUnrYM",
   authDomain: "masheha-fcf45.firebaseapp.com",
@@ -13,9 +13,9 @@ const firebaseConfig = {
   measurementId: "G-21RCM3CNRR"
 };
 
-// ✅ منع إعادة تهيئة Firebase في الـ Server Side (مهم لـ Next.js)
+// منع إعادة تهيئة Firebase في الـ Server Side (مهم لـ Next.js)
 const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
 const auth = getAuth(app);
 
-// ✅ تصدير الـ auth عشان تستخدمه في الـ hooks
+// تصدير الـ auth عشان تستخدمه في الـ hooks
 export { app, auth };

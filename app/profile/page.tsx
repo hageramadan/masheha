@@ -18,7 +18,7 @@ export default function ProfilePage() {
 
   useEffect(() => {
     const handlePaymentCallback = async () => {
-      // ✅ استخدام URLSearchParams من window.location
+      // استخدام URLSearchParams من window.location
       const params = new URLSearchParams(window.location.search);
       const paymentStatus = params.get('payment_status');
       const bookingId = params.get('booking_id');
@@ -44,7 +44,7 @@ export default function ProfilePage() {
               );
             }
             
-            toast.success('✅ تم الدفع بنجاح!');
+            toast.success('تم الدفع بنجاح!');
             setSelectedBookingId(parseInt(bookingId));
             setActiveTab('bookings');
             
@@ -80,7 +80,7 @@ export default function ProfilePage() {
   }, [router]);
 
   useEffect(() => {
-    // ✅ استخدام URLSearchParams من window.location
+    // استخدام URLSearchParams من window.location
     const params = new URLSearchParams(window.location.search);
     const tab = params.get('tab');
     if (tab === 'bookings') {

@@ -45,7 +45,7 @@ export default function AuthRegister({ onSwitchToLogin, onSuccess }: AuthRegiste
       const response = await register(userData);
       
       if (response.result) {
-        toast.success('✅ تم إنشاء الحساب بنجاح!');
+        toast.success('تم إنشاء الحساب بنجاح!');
         if (onSuccess) {
           onSuccess();
         }

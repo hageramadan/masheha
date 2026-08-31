@@ -125,7 +125,7 @@ export default function Navbar() {
               ) : (
                
                 <>
-                  <button
+                  {/* <button
                     onClick={() => openAuthPopup('login')}
                     className="group flex items-center gap-2 border-2 border-primary/20 hover:border-primary py-2 px-5 xl:px-7 rounded-xl font-bold text-sm xl:text-base text-primary hover:bg-primary/5 transition-all duration-300 hover:scale-105 hover:shadow-md"
                   >
@@ -136,7 +136,7 @@ export default function Navbar() {
                     className="group flex items-center gap-2 bg-primary hover:bg-primary/85 font-bold text-sm xl:text-base py-2.5 xl:py-3 px-5 xl:px-7 text-white rounded-xl transition-all duration-300 hover:scale-105 hover:shadow-lg hover:shadow-primary/30"
                   >
                     انشاء حساب
-                  </button>
+                  </button> */}
                 </>
               )}
             </div>

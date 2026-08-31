@@ -33,6 +33,18 @@ export class CarService extends ApiService {
   private static cacheTimestamp: number | null = null;
   private static CACHE_DURATION = 5 * 60 * 1000;
 
+  // ============================================
+  // 🔑 Public Keys - Production & Test
+  // ============================================
+  private static readonly PUBLIC_KEY_TEST = "sau_pk_test_SCltAxh7OTxzJ5ydtfIhJstUARoCOekt";
+  private static readonly PUBLIC_KEY_LIVE = "sau_pk_live_uIsTYNAhY7ONDAtd6eYycGxZHCIe58mH"; // استبدليها بالمفتاح الصحيح
+
+  // ============================================
+  // 📦 Base URLs - Production & Test
+  // ============================================
+  private static readonly CHECKOUT_URL_LIVE = "https://ksa.checkout.paymob.com/";
+  private static readonly CHECKOUT_URL_TEST = "https://ksa.checkout.paymob.com/";
+
   static async getDailyCarsRaw(
     forceRefresh: boolean = false,
   ): Promise<DailyCarsResponse[]> {
@@ -277,7 +289,7 @@ export class CarService extends ApiService {
         `/monthly-companies/${officeId}/${carId}`,
       );
 
-      console.log("✅ Response:", response);
+      console.log("Response:", response);
 
       if (!response.result) {
         throw new Error(
@@ -291,6 +303,7 @@ export class CarService extends ApiService {
       throw error;
     }
   }
+
   static async getAvailablePeriods(
     carId: number,
     officeId: number,
@@ -313,6 +326,7 @@ export class CarService extends ApiService {
       throw error;
     }
   }
+
   static async getPaymentMethods(): Promise<PaymentMethod[]> {
     try {
       const response =
@@ -330,6 +344,7 @@ export class CarService extends ApiService {
       throw error;
     }
   }
+
   static async calculatePrice(
     params: CalculatePriceRequest,
   ): Promise<CalculatePriceResponse> {
@@ -362,6 +377,7 @@ export class CarService extends ApiService {
       throw error;
     }
   }
+
   static async getSliders(): Promise<SliderResponse> {
     try {
       const response =
@@ -383,7 +399,6 @@ export class CarService extends ApiService {
     token: string,
   ): Promise<CreateBookingResponse> {
     try {
-      
       const requestBody = {
         category_id: params.category_id || 1,
         zip: params.zip || "RHSB7908",
@@ -405,13 +420,10 @@ export class CarService extends ApiService {
         insurance_type_id: params.insurance_type_id || 4,
         address: params.address || "",
         amount: params.amount || 0,
-              ...(params.rental_company_car_period_id && {
-        rental_company_car_period_id: params.rental_company_car_period_id,
-      }),
-
+        ...(params.rental_company_car_period_id && {
+          rental_company_car_period_id: params.rental_company_car_period_id,
+        }),
       };
-
-      
 
       const response = await this.post<ApiResponse<CreateBookingResponse>>(
         "/bookings",
@@ -433,118 +445,184 @@ export class CarService extends ApiService {
     }
   }
 
-// src/services/carService.ts
+  // ============================================
+  // 💳 CHECKOUT - Production Ready
+  // ============================================
 
-static async checkout(
-  params: CheckoutRequest,
-  token: string
-): Promise<{ payment_url: string; payment_data?: any }> {
-  try {
-    const requestBody = {
-      car_name: params.car_name,
-      amount: params.amount,
-      index: params.index,
-      uuid: params.uuid,
-      zip: params.zip || '12251',
-      payment_method: params.payment_method,
-      address: params.address,
-      city: params.city || 'الرياض',
-      
- callback_url: params.callback_url, 
-      return_url: params.return_url,
-    };
+  static async checkout(
+    params: CheckoutRequest,
+    token: string,
+  ): Promise<{ payment_url: string; payment_data?: any }> {
+    try {
+      const requestBody = {
+        car_name: params.car_name,
+        amount: params.amount,
+        index: params.index,
+        uuid: params.uuid,
+        zip: params.zip || "12251",
+        payment_method: params.payment_method,
+        address: params.address,
+        city: params.city || "الرياض",
+        callback_url: params.callback_url,
+        return_url: params.return_url,
+      };
 
-    console.log('📤 Checkout Request:', requestBody);
+      console.log("📤 Checkout Request:", requestBody);
 
-    const response = await this.post<ApiResponse<any>>(
-      '/pay/checkout',
-      requestBody,
-      {
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json',
+      const response = await this.post<ApiResponse<any>>(
+        "/pay/checkout",
+        requestBody,
+        {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+      );
+
+      console.log(
+        "📥 Full Checkout Response:",
+        JSON.stringify(response, null, 2),
+      );
+
+      if (!response.result) {
+        throw new Error(response.message || "فشل عملية الدفع");
       }
-    );
 
-    console.log('📥 Full Checkout Response:', JSON.stringify(response, null, 2));
+      let paymentUrl = "";
+      const paymentData = response.data?.payment || response.data;
 
-    if (!response.result) {
-      throw new Error(response.message || 'فشل عملية الدفع');
-    }
-
-    let paymentUrl = '';
-    const paymentData = response.data?.payment || response.data;
-
-    // ✅ 1. أولاً: التحقق من Tabby (installments)
-    if (paymentData?.configuration?.available_products?.installments) {
-      const installments = paymentData.configuration.available_products.installments;
-      if (installments.length > 0 && installments[0]?.web_url) {
-        paymentUrl = installments[0].web_url;
-        console.log('🔗 Tabby Payment URL (from installments):', paymentUrl);
-      }
-    }
-
-    // ✅ 2. التحقق من web_url مباشر (Tabby)
-    if (!paymentUrl && paymentData?.web_url) {
-      paymentUrl = paymentData.web_url;
-      console.log('🔗 Tabby web_url:', paymentUrl);
-    }
-
-    // ✅ 3. التحقق من checkout_url (Tamara)
-    if (!paymentUrl && paymentData?.checkout_url) {
-      paymentUrl = paymentData.checkout_url;
-      console.log('🔗 Tamara checkout_url:', paymentUrl);
-    }
-
-    // ✅ 4. بناء رابط Paymob من client_secret (فيزا/ماستر/مدى/ابل باي)
-    if (!paymentUrl) {
+      // ============================================
+      // 1️⃣ استخراج client_secret من الـ Response
+      // ============================================
       const clientSecret = paymentData?.client_secret || response.data?.client_secret;
-      if (clientSecret) {
-        // ✅ استخدم public key المناسب
-        const publicKey = 'sau_csk_test_54530749b40f5727f5003d9b04602948'; // Live Key
-        // للاختبار استخدم: 'sau_pk_test_SCltAxh7OTxzJ5ydtfIhJstUARoCOekt'
-        paymentUrl = `https://ksa.paymob.com/unifiedcheckout/?publicKey=${publicKey}&clientSecret=${clientSecret}`;
-        console.log('🔗 Paymob URL (built from client_secret):', paymentUrl);
+
+      // ============================================
+      // 2️⃣ تحديد البيئة (Test / Live) ديناميكياً
+      // ============================================
+      let isLive = false;
+      
+      // 2.1 من payment_methods
+      if (paymentData?.payment_methods && Array.isArray(paymentData.payment_methods)) {
+        const firstMethod = paymentData.payment_methods[0];
+        if (firstMethod && typeof firstMethod.live === 'boolean') {
+          isLive = firstMethod.live;
+        }
       }
-    }
-
-    // ✅ 5. التحقق من payment_keys (كحل أخير)
-    if (!paymentUrl && paymentData?.payment_keys && paymentData.payment_keys.length > 0) {
-      const firstKey = paymentData.payment_keys[0];
-      // ❌ لا تستخدم redirection_url لأنه رابط POST
-      // ✅ استخدم client_secret بدلاً منه
-      if (paymentData.client_secret) {
-        const publicKey = 'sau_csk_test_54530749b40f5727f5003d9b04602948';
-        paymentUrl = `https://ksa.paymob.com/unifiedcheckout/?publicKey=${publicKey}&clientSecret=${paymentData.client_secret}`;
-        console.log('🔗 Paymob URL (from payment_keys fallback):', paymentUrl);
+      
+      // 2.2 من client_secret
+      if (clientSecret && typeof clientSecret === 'string') {
+        if (clientSecret.includes('_test_')) {
+          isLive = false;
+        } else if (clientSecret.includes('_live_')) {
+          isLive = true;
+        }
       }
+
+      console.log(`🌍 Environment: ${isLive ? '🔴 LIVE (Production)' : '🟢 TEST'}`);
+
+      // ============================================
+      // 3️⃣ اختيار الـ Public Key المناسب
+      // ============================================
+      let publicKey = paymentData?.public_key;
+      
+      if (!publicKey) {
+        publicKey = isLive 
+          ? this.PUBLIC_KEY_LIVE 
+          : this.PUBLIC_KEY_TEST;
+      }
+
+      console.log(`🔑 Public Key: ${publicKey}`);
+
+      // ============================================
+      // 4️⃣ بناء رابط Paymob
+      // ============================================
+      if (clientSecret && publicKey) {
+        const baseUrl = isLive ? this.CHECKOUT_URL_LIVE : this.CHECKOUT_URL_TEST;
+        const url = new URL(baseUrl);
+        url.searchParams.append('publicKey', publicKey);
+        url.searchParams.append('clientSecret', clientSecret);
+        paymentUrl = url.toString();
+        
+        // ============================================
+        // 5️⃣ طباعة الرابط في الكونسول
+        // ============================================
+        console.log("=" .repeat(80));
+        console.log(`🔗 PAYMENT URL (${isLive ? 'LIVE' : 'TEST'}):`);
+        console.log(paymentUrl);
+        console.log("=" .repeat(80));
+        
+        // ============================================
+        // 6️⃣ فتح الرابط في المتصفح
+        // ============================================
+        console.log("🚀 Opening payment URL...");
+        
+        if (typeof window !== 'undefined' && window.location) {
+          window.location.href = paymentUrl;
+          console.log("✅ Redirected to payment page");
+        } else {
+          console.warn("⚠️ window.location not available, returning URL for manual handling");
+        }
+      }
+
+      // ============================================
+      // 7️⃣ التحقق من الروابط البديلة
+      // ============================================
+      
+      // 7.1 Tabby (installments)
+      if (!paymentUrl && paymentData?.configuration?.available_products?.installments) {
+        const installments = paymentData.configuration.available_products.installments;
+        if (installments.length > 0 && installments[0]?.web_url) {
+          paymentUrl = installments[0].web_url;
+          console.log("🔗 Tabby Payment URL (from installments):", paymentUrl);
+        }
+      }
+
+      // 7.2 Tabby web_url
+      if (!paymentUrl && paymentData?.web_url) {
+        paymentUrl = paymentData.web_url;
+        console.log("🔗 Tabby web_url:", paymentUrl);
+      }
+
+      // 7.3 Tamara checkout_url
+      if (!paymentUrl && paymentData?.checkout_url) {
+        paymentUrl = paymentData.checkout_url;
+        console.log("🔗 Tamara checkout_url:", paymentUrl);
+      }
+
+      // 7.4 MIGS redirection_url
+      if (!paymentUrl && paymentData?.payment_keys && paymentData.payment_keys.length > 0) {
+        const firstKey = paymentData.payment_keys[0];
+        if (firstKey?.redirection_url) {
+          paymentUrl = firstKey.redirection_url;
+          console.log("🔗 Redirection URL (from payment_keys):", paymentUrl);
+        }
+      }
+
+      // 7.5 redirect_url
+      if (!paymentUrl && paymentData?.redirect_url) {
+        paymentUrl = paymentData.redirect_url;
+        console.log("🔗 redirect_url:", paymentUrl);
+      }
+
+      // 7.6 payment_url
+      if (!paymentUrl && response.data?.payment_url) {
+        paymentUrl = response.data.payment_url;
+        console.log("🔗 payment_url:", paymentUrl);
+      }
+
+      console.log("🔗 Final Payment URL:", paymentUrl);
+
+      if (!paymentUrl) {
+        console.error("❌ No payment URL found in response");
+        throw new Error("لم يتم العثور على رابط الدفع");
+      }
+
+      return {
+        payment_url: paymentUrl,
+        payment_data: paymentData,
+      };
+    } catch (error) {
+      console.error("Error during checkout:", error);
+      throw error;
     }
-
-    // ✅ 6. التحقق من redirect_url (كحل أخير)
-    if (!paymentUrl && paymentData?.redirect_url) {
-      paymentUrl = paymentData.redirect_url;
-      console.log('🔗 redirect_url:', paymentUrl);
-    }
-
-    // ✅ 7. التحقق من payment_url مباشر
-    if (!paymentUrl && response.data?.payment_url) {
-      paymentUrl = response.data.payment_url;
-      console.log('🔗 payment_url:', paymentUrl);
-    }
-
-    console.log('🔗 Final Payment URL:', paymentUrl);
-
-    if (!paymentUrl) {
-      console.error('❌ No payment URL found in response');
-      throw new Error('لم يتم العثور على رابط الدفع');
-    }
-
-    return {
-      payment_url: paymentUrl,
-      payment_data: paymentData,
-    };
-  } catch (error) {
-    console.error('Error during checkout:', error);
-    throw error;
   }
-}
 }

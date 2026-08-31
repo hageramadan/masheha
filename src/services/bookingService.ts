@@ -126,7 +126,7 @@ export class BookingService {
     return { isValid: true };
   }
 
-  // ✅ **الدالة المعدلة: إضافة callback_url**
+  // **الدالة المعدلة: إضافة callback_url**
   static async processPayment(
     bookingData: {
       carName: string;
@@ -137,15 +137,15 @@ export class BookingService {
       address: string;
       city: string;
       index: number;
-      callback_url?: string; // ✅ إضافة callback_url اختياري
-      return_url?: string;   // ✅ إضافة return_url اختياري
+      callback_url?: string; // إضافة callback_url اختياري
+      return_url?: string;   // إضافة return_url اختياري
     },
     token: string
   ): Promise<{ success: boolean; message: string; paymentUrl?: string; paymentData?: any }> {
     try {
       console.log('📤 processPayment called with:', bookingData);
 
-      // ✅ بناء المعاملات مع callback_url
+      // بناء المعاملات مع callback_url
       const checkoutParams: CheckoutRequest = {
         car_name: bookingData.carName,
         amount: bookingData.amount,
@@ -155,8 +155,8 @@ export class BookingService {
         payment_method: bookingData.paymentMethodId,
         address: bookingData.address,
         city: bookingData.city || 'الرياض',
-        callback_url: bookingData.callback_url, // ✅ إرسال callback_url
-        return_url: bookingData.return_url,     // ✅ إرسال return_url
+        callback_url: bookingData.callback_url, // إرسال callback_url
+        return_url: bookingData.return_url,     // إرسال return_url
       };
 
       console.log('📤 Processing payment:', checkoutParams);
@@ -165,7 +165,7 @@ export class BookingService {
       
       console.log('📥 Checkout response in processPayment:', response);
 
-      // ✅ تحقق من وجود رابط الدفع
+      // تحقق من وجود رابط الدفع
       if (!response.payment_url) {
         console.error('❌ No payment URL in response:', response);
         return {

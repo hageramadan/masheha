@@ -30,7 +30,7 @@ interface CountryCode {
   skipValidation?: boolean;
 }
 
-// ✅ بيانات الدول كاملة
+// بيانات الدول كاملة
 const countryCodes: CountryCode[] = [
   // الدول العربية
   { 

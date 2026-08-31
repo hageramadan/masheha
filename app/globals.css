@@ -55,16 +55,16 @@ button{
   --radius-lg: var(--radius);
   --radius-xl: calc(var(--radius) * 1.4);
   
-  /* ✅ الخط العربي */
+  /* الخط العربي */
   --font-almarai: var(--font-almarai);
 }
 
-/* ✅ دعم RTL واللغة العربية */
+/* دعم RTL واللغة العربية */
 html[dir="rtl"] {
   text-align: right;
 }
 
-/* ✅ تطبيق الخط العربي على كل العناصر */
+/* تطبيق الخط العربي على كل العناصر */
 body {
   font-family: var(--font-almarai), 'Almarai', 'Arial', sans-serif;
   background: var(--background);
@@ -73,13 +73,13 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
-/* ✅ تحسين النصوص العربية */
+/* تحسين النصوص العربية */
 h1, h2, h3, h4, h5, h6 {
   font-family: var(--font-almarai), 'Almarai', sans-serif;
   letter-spacing: 0.01em;
 }
 
-/* ✅ تحسين Swiper للـ RTL */
+/* تحسين Swiper للـ RTL */
 .swiper {
   direction: rtl;
 }

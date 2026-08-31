@@ -37,7 +37,7 @@ export default function AuthLogin({ onSwitchToRegister, onSuccess }: AuthLoginPr
     
     setIsLoading(true);
     try {
-      // ✅ استدعاء register بدلاً من loginWithPhone
+      // استدعاء register بدلاً من loginWithPhone
       const userData = {
         name: name.trim(),
         phone: phoneNumber,
@@ -47,7 +47,7 @@ export default function AuthLogin({ onSwitchToRegister, onSuccess }: AuthLoginPr
       const response = await register(userData);
       
       if (response.result) {
-        toast.success('✅ تم تسجيل الدخول بنجاح!');
+        toast.success('تم تسجيل الدخول بنجاح!');
         if (onSuccess) {
           onSuccess();
         }
@@ -67,7 +67,7 @@ export default function AuthLogin({ onSwitchToRegister, onSuccess }: AuthLoginPr
       </div>
 
       <form onSubmit={handleSubmit}>
-        {/* ✅ حقل الاسم */}
+        {/* حقل الاسم */}
         <div className="mb-4">
           <label className="block text-sm font-bold text-gray-700 mb-2">
             الاسم

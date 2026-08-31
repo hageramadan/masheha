@@ -14,7 +14,7 @@ export default function SupportPage() {
       toast.error(' يرجى كتابة رسالتك');
       return;
     }
-    toast.success('✅ تم إرسال رسالتك، سيتم الرد عليك خلال 24 ساعة');
+    toast.success('تم إرسال رسالتك، سيتم الرد عليك خلال 24 ساعة');
     setMessage('');
   };
 

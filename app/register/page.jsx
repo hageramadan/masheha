@@ -23,7 +23,7 @@ export default function RegisterPage() {
       return;
     }
     
-    toast.success('✅ تم إرسال رمز التحقق');
+    toast.success('تم إرسال رمز التحقق');
     // توجيه إلى صفحة OTP مع تمرير رقم الهاتف ونوع العملية
     window.location.href = `/otp?phone=${phoneNumber}&code=${countryCode}&type=register`;
   };

@@ -43,13 +43,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     localStorage.setItem('token', token);
   };
 
-  // ✅ تسجيل الخروج من الـ API
+  // تسجيل الخروج من الـ API
   const logout = async () => {
     try {
       const currentToken = localStorage.getItem('token');
       
       if (currentToken) {
-        await fetch('https://dev.masheha.com/api/user/logout', {
+        await fetch('https://admin.masheha.com/api/user/logout', {
           method: 'POST',
           headers: {
             'Authorization': `Bearer ${currentToken}`,
@@ -80,7 +80,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         throw new Error('No token found');
       }
 
-      const response = await fetch('https://dev.masheha.com/api/user/me', {
+      const response = await fetch('https://admin.masheha.com/api/user/me', {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${currentToken}`,
@@ -119,7 +119,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       formData.append('country_code', data.country_code);
       formData.append('_method', 'PUT');
 
-      const response = await fetch('https://dev.masheha.com/api/user/update/profile', {
+      const response = await fetch('https://admin.masheha.com/api/user/update/profile', {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${currentToken}`,
@@ -145,10 +145,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  // ✅ تسجيل الدخول
+  // تسجيل الدخول
   const loginWithPhone = async (phone: string, countryCode: string) => {
     try {
-      const response = await fetch('https://dev.masheha.com/api/user/login', {
+      const response = await fetch('https://admin.masheha.com/api/user/login', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -182,10 +182,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  // ✅ التسجيل
+  // التسجيل
   const register = async (userData: any) => {
     try {
-      const response = await fetch('https://dev.masheha.com/api/user/register', {
+      const response = await fetch('https://admin.masheha.com/api/user/register', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

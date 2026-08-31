@@ -26,7 +26,7 @@ export default function OTPPopup({
   const [isVerifying, setIsVerifying] = useState(false);
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
 
-  // ✅ تركيز على أول خانة عند فتح البوب اب
+  // تركيز على أول خانة عند فتح البوب اب
   useEffect(() => {
     if (isOpen) {
       setOtp(['', '', '', '', '', '']);
@@ -37,41 +37,41 @@ export default function OTPPopup({
     }
   }, [isOpen]);
 
-  // ✅ معالج تغيير كل خانة
+  // معالج تغيير كل خانة
   const handleChange = (index: number, value: string) => {
-    // ✅ السماح فقط بالأرقام
+    // السماح فقط بالأرقام
     if (value && !/^\d$/.test(value)) return;
 
     const newOtp = [...otp];
     newOtp[index] = value;
     setOtp(newOtp);
 
-    // ✅ الانتقال للخانة التالية تلقائياً
+    // الانتقال للخانة التالية تلقائياً
     if (value && index < 5) {
       inputRefs.current[index + 1]?.focus();
     }
   };
 
-  // ✅ معالج المفاتيح (بما في ذلك الأسهم)
+  // معالج المفاتيح (بما في ذلك الأسهم)
   const handleKeyDown = (index: number, e: React.KeyboardEvent<HTMLInputElement>) => {
     const currentValue = otp[index];
 
-    // ✅ مفتاح Backspace: يمسح الخانة الحالية ويرجع للخانة السابقة
+    // مفتاح Backspace: يمسح الخانة الحالية ويرجع للخانة السابقة
     if (e.key === 'Backspace') {
       if (currentValue) {
-        // ✅ لو في قيمة، امسحها
+        // لو في قيمة، امسحها
         const newOtp = [...otp];
         newOtp[index] = '';
         setOtp(newOtp);
       } else if (index > 0) {
-        // ✅ لو مفيش قيمة، ارجع للخانة السابقة
+        // لو مفيش قيمة، ارجع للخانة السابقة
         inputRefs.current[index - 1]?.focus();
       }
       e.preventDefault();
       return;
     }
 
-    // ✅ مفتاح Delete: يمسح الخانة الحالية
+    // مفتاح Delete: يمسح الخانة الحالية
     if (e.key === 'Delete') {
       const newOtp = [...otp];
       newOtp[index] = '';
@@ -80,17 +80,17 @@ export default function OTPPopup({
       return;
     }
 
-    // ✅ التنقل بالأسهم (يمين/شمال)
+    // التنقل بالأسهم (يمين/شمال)
     if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') {
       e.preventDefault();
       
       if (e.key === 'ArrowRight') {
-        // ✅ انتقل للخانة التي على اليمين (في وضع RTL، اليمين هو التالي)
+        // انتقل للخانة التي على اليمين (في وضع RTL، اليمين هو التالي)
         if (index < 5) {
           inputRefs.current[index + 1]?.focus();
         }
       } else if (e.key === 'ArrowLeft') {
-        // ✅ انتقل للخانة التي على اليسار (في وضع RTL، اليسار هو السابق)
+        // انتقل للخانة التي على اليسار (في وضع RTL، اليسار هو السابق)
         if (index > 0) {
           inputRefs.current[index - 1]?.focus();
         }
@@ -98,20 +98,20 @@ export default function OTPPopup({
       return;
     }
 
-    // ✅ مفتاح Enter: ينفذ التحقق
+    // مفتاح Enter: ينفذ التحقق
     if (e.key === 'Enter') {
       e.preventDefault();
       handleVerify();
       return;
     }
 
-    // ✅ منع إدخال أي شيء غير الأرقام
+    // منع إدخال أي شيء غير الأرقام
     if (e.key && !/^\d$/.test(e.key) && e.key !== 'Tab') {
       e.preventDefault();
     }
   };
 
-  // ✅ معالج Paste (لصق الكود كامل)
+  // معالج Paste (لصق الكود كامل)
   const handlePaste = (e: React.ClipboardEvent<HTMLInputElement>) => {
     e.preventDefault();
     const pastedData = e.clipboardData.getData('text').trim();
@@ -124,7 +124,7 @@ export default function OTPPopup({
       }
       setOtp(newOtp);
       
-      // ✅ الانتقال للخانة التالية بعد اللصق
+      // الانتقال للخانة التالية بعد اللصق
       const nextIndex = Math.min(numbers.length, 5);
       setTimeout(() => {
         inputRefs.current[nextIndex]?.focus();
@@ -132,7 +132,7 @@ export default function OTPPopup({
     }
   };
 
-  // ✅ معالج التحقق
+  // معالج التحقق
   const handleVerify = async () => {
     const otpCode = otp.join('');
     if (otpCode.length < 6) {
@@ -149,7 +149,7 @@ export default function OTPPopup({
     }
   };
 
-  // ✅ اختيار النص بالكامل عند الضغط (يسهل النسخ)
+  // اختيار النص بالكامل عند الضغط (يسهل النسخ)
   const handleFocus = (e: React.FocusEvent<HTMLInputElement>) => {
     e.target.select();
   };
@@ -159,7 +159,7 @@ export default function OTPPopup({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm animate-fadeIn">
       <div className="bg-white relative rounded-3xl p-6 lg:p-8 max-w-md w-full mx-4 shadow-2xl animate-scaleIn">
-        {/* ✅ Header */}
+        {/* Header */}
         <div className="flex items-center justify-center mb-6">
           <div className='flex flex-col items-center justify-center'>
             <h2 className="text-xl font-bold text-gray-800"> رمز التحقق</h2>
@@ -180,7 +180,7 @@ export default function OTPPopup({
             <FaTimes className="text-gray-500 text-xl" />
           </button>
 
-        {/* ✅ خانات OTP */}
+        {/* خانات OTP */}
         <div className="flex justify-center gap-2 lg:gap-3 my-8" dir="ltr">
           {otp.map((digit, index) => (
             <input
@@ -215,7 +215,7 @@ export default function OTPPopup({
 
        
 
-        {/* ✅ أزرار */}
+        {/* أزرار */}
         <div className="space-y-3">
           <button
             onClick={handleVerify}
