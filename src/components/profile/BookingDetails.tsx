@@ -278,6 +278,7 @@ export default function BookingDetails({
   }
 
   const isPaymentPending = booking.payment_status !== "paid";
+  const isPaymentPaid = booking.payment_status === "paid";
 
   return (
     <div className="bg-white min-h-screen">
@@ -570,7 +571,8 @@ export default function BookingDetails({
           )}
         </div>
 
-        {!isCheckingExtension && canExtend && (
+        {/* زر تمديد الحجز - يظهر فقط عندما تكون حالة الدفع مدفوع */}
+        {!isCheckingExtension && isPaymentPaid && canExtend && (
           <div
             className={cn(
               "pt-2",
@@ -591,7 +593,7 @@ export default function BookingDetails({
             {extensionData && (
               <div className="flex items-center justify-center gap-2 mt-2 text-xs text-gray-500 text-center">
                 يمكنك التمديد حتى {extensionData.max_extension_days} يوم إضافي
-                {extensionData.daily_price && (
+                {/* {extensionData.daily_price && (
                   <div className="flex items-center gap-1">
                     <span>
                       | السعر اليومي:
@@ -605,30 +607,47 @@ export default function BookingDetails({
                       className="w-3 h-3"
                     />
                   </div>
-                )}
+                )} */}
               </div>
             )}
           </div>
         )}
-
-        {!isCheckingExtension &&
-          !canExtend &&
-          booking.status !== "completed" && (
-            <div
-              className={cn(
-                "pt-2",
-                "transform transition-all duration-500 ease-out",
-                isVisible
-                  ? "opacity-100 translate-y-0"
-                  : "opacity-0 translate-y-8",
-              )}
-              style={{ transitionDelay: "400ms" }}
-            >
-              <div className="text-center text-sm text-gray-500 bg-gray-50 p-3 rounded-xl">
-                <p> لا يمكن تمديد هذا الحجز في الوقت الحالي</p>
-              </div>
+ 
+        {/* رسالة عدم إمكانية التمديد - تظهر فقط عندما تكون حالة الدفع مدفوع */}
+        {!isCheckingExtension && isPaymentPaid && !canExtend && booking.status !== "completed" && (
+          <div
+            className={cn(
+              "pt-2",
+              "transform transition-all duration-500 ease-out",
+              isVisible
+                ? "opacity-100 translate-y-0"
+                : "opacity-0 translate-y-8",
+            )}
+            style={{ transitionDelay: "400ms" }}
+          >
+            <div className="text-center text-sm text-gray-500 bg-gray-50 p-3 rounded-xl">
+              <p>لا يمكن تمديد هذا الحجز في الوقت الحالي</p>
             </div>
-          )}
+          </div>
+        )}
+
+        {/* رسالة للحجز غير المدفوع - عدم إمكانية التمديد */}
+        {/* {!isCheckingExtension && isPaymentPending && (
+          <div
+            className={cn(
+              "pt-2",
+              "transform transition-all duration-500 ease-out",
+              isVisible
+                ? "opacity-100 translate-y-0"
+                : "opacity-0 translate-y-8",
+            )}
+            style={{ transitionDelay: "400ms" }}
+          >
+            <div className="text-center text-sm text-amber-600 bg-amber-50 p-3 rounded-xl border border-amber-200">
+              <p>⚠️ يجب دفع قيمة الحجز أولاً لتتمكن من تمديده</p>
+            </div>
+          </div>
+        )} */}
       </div>
 
       {showPaymentPopup && (
