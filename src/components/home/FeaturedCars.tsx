@@ -354,9 +354,9 @@ export default function FeaturedCars() {
   return (
     <section className="py-2 pt-4 lg:pt-8">
       <div className="container mx-auto px-2">
-        <h2 className="text-2xl md:text-4xl font-bold mb-4 text-primary">
+        {/* <h2 className="text-2xl md:text-4xl font-bold mb-4 text-primary">
           احجز الان
-        </h2>
+        </h2> */}
 
         <div className="flex justify-center gap-4 mb-10">
           <Button

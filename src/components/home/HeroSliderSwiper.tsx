@@ -48,7 +48,7 @@ export default function HeroSliderSwiper() {
  
 
   return (
-    <section className="relative">
+    <section className="relative mt-12">
       <Swiper
         modules={[Autoplay, Pagination, EffectFade]} 
         effect="fade"
@@ -86,10 +86,10 @@ export default function HeroSliderSwiper() {
               <div className={`absolute inset-0 bg-black/50 opacity-75`} />
               <div className="absolute inset-0 flex items-center justify-start">
                 <div className="container mx-auto px-4 text-white">
-                  <h1 className="text-3xl md:text-5xl lg:text-6xl font-bold mb-4 leading-tight">
+                  <h1 className="text-lg md:text-5xl lg:text-6xl font-bold  lg:mb-4 leading-tight">
                     {slide.title}
                   </h1>
-                  <p className="text-xl md:text-2xl lg:text-3xl mb-8 text-[#D2D6DB]">
+                  <p className="text-base md:text-2xl lg:text-3xl lg:mb-8 text-[#D2D6DB]">
                     {slide.subtitle}
                   </p>
                   {/* <Button 
@@ -99,7 +99,7 @@ export default function HeroSliderSwiper() {
                     <FaCar className="ml-2" />
                     {slide.buttonText}
                   </Button> */}
-                  <div className='mt-2 md:mt-4'>
+                  <div className='my-4'>
                   <DownloadApp/>
 
                   </div>
