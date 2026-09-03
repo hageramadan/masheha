@@ -31,7 +31,151 @@ interface ExtendedTotals {
   totalDays: number;
 }
 
-// دالة لتفريغ بيانات الحجز
+// ✅ دالة مساعدة لفك ترميز Unicode escape sequences
+const decodeUnicode = (str: string): string => {
+  if (!str || typeof str !== 'string') return str;
+  
+  // إذا كان النص يحتوي على \u
+  if (str.includes('\\u')) {
+    try {
+      return JSON.parse(`"${str}"`);
+    } catch {
+      try {
+        return decodeURIComponent(str.replace(/\\u/g, '%u'));
+      } catch {
+        return str.replace(/\\u([0-9a-fA-F]{4})/g, (_, hex) => {
+          return String.fromCharCode(parseInt(hex, 16));
+        });
+      }
+    }
+  }
+  
+  return str;
+};
+
+// ✅ دالة استخراج الرسالة من أي نوع من الأخطاء
+const extractErrorMessage = (error: any): string => {
+  // 1️⃣ إذا كان الخطأ نصاً
+  if (typeof error === 'string') {
+    return decodeUnicode(error);
+  }
+
+  // 2️⃣ إذا كان الخطأ كائن له errors.start_time مباشرة
+  if (error?.errors?.start_time && Array.isArray(error.errors.start_time)) {
+    const timeError = error.errors.start_time[0];
+    if (typeof timeError === 'string') {
+      return decodeUnicode(timeError);
+    }
+    return String(timeError);
+  }
+
+  // 3️⃣ إذا كان الخطأ كائن له message
+  if (error?.message) {
+    // إذا كانت الرسالة كائن
+    if (typeof error.message === 'object' && error.message !== null) {
+      // محاولة استخراج الرسالة من الكائن
+      if (error.message.errors?.start_time?.[0]) {
+        return decodeUnicode(error.message.errors.start_time[0]);
+      }
+      if (error.message.message) {
+        return decodeUnicode(error.message.message);
+      }
+      // محاولة تحويل الكائن إلى نص
+      const jsonStr = JSON.stringify(error.message);
+      // محاولة استخراج الرسالة من النص
+      const match = jsonStr.match(/"message":"([^"]*)"/);
+      if (match) {
+        return decodeUnicode(match[1]);
+      }
+      return decodeUnicode(jsonStr);
+    }
+    
+    if (typeof error.message === 'string') {
+      // محاولة استخراج الرسالة من النص إذا كان يحتوي على JSON
+      if (error.message.includes('{"message"')) {
+        try {
+          const parsed = JSON.parse(error.message);
+          if (parsed.message) {
+            return decodeUnicode(parsed.message);
+          }
+          if (parsed.errors?.start_time?.[0]) {
+            return decodeUnicode(parsed.errors.start_time[0]);
+          }
+        } catch {
+          // إذا فشل الـ parse، نبحث بالـ regex
+          const match = error.message.match(/"message":"([^"]*)"/);
+          if (match) {
+            return decodeUnicode(match[1]);
+          }
+        }
+      }
+      return decodeUnicode(error.message);
+    }
+    return String(error.message);
+  }
+
+  // 4️⃣ إذا كان الخطأ له response.data (من axios)
+  if (error?.response?.data) {
+    const data = error.response.data;
+    
+    if (data.errors?.start_time && Array.isArray(data.errors.start_time)) {
+      const timeError = data.errors.start_time[0];
+      if (typeof timeError === 'string') {
+        return decodeUnicode(timeError);
+      }
+      return String(timeError);
+    }
+
+    if (data.message) {
+      if (typeof data.message === 'string') {
+        return decodeUnicode(data.message);
+      }
+      return String(data.message);
+    }
+  }
+
+  // 5️⃣ إذا كان الخطأ له data مباشرة
+  if (error?.data) {
+    const data = error.data;
+    
+    if (data.errors?.start_time && Array.isArray(data.errors.start_time)) {
+      const timeError = data.errors.start_time[0];
+      if (typeof timeError === 'string') {
+        return decodeUnicode(timeError);
+      }
+      return String(timeError);
+    }
+
+    if (data.message) {
+      if (typeof data.message === 'string') {
+        return decodeUnicode(data.message);
+      }
+      return String(data.message);
+    }
+  }
+
+  // 6️⃣ محاولة استخراج الرسالة من أي كائن باستخدام regex
+  if (error && typeof error === 'object') {
+    const jsonStr = JSON.stringify(error);
+    const match = jsonStr.match(/"message":"([^"]*)"/);
+    if (match) {
+      return decodeUnicode(match[1]);
+    }
+    const match2 = jsonStr.match(/"start_time":\["([^"]*)"\]/);
+    if (match2) {
+      return decodeUnicode(match2[1]);
+    }
+  }
+
+  // 7️⃣ الحالة الافتراضية
+  return error?.toString?.() || 'حدث خطأ غير متوقع';
+};
+
+// ✅ دالة parseErrorMessage المبسطة (للتوافق مع الكود القديم)
+const parseErrorMessage = (error: any): string => {
+  return extractErrorMessage(error);
+};
+
 const getEmptyBookingData = (carId: string): BookingData => ({
   ...getInitialBookingData(carId),
   customerName: "",
@@ -156,7 +300,6 @@ export const useBookingForm = (
       return response;
     } catch (error) {
       console.error("Error calculating price:", error);
-      // toast.error("حدث خطأ في حساب السعر");
     } finally {
       setIsCalculating(false);
     }
@@ -312,12 +455,12 @@ export const useBookingForm = (
   }, [carId]);
 
   // دالة لتعيين period_id (للحجز الشهري)
-  const setPeriodId = useCallback((periodId: number) => {
+  const setPeriodId = useCallback((periodId: number | null) => {
     setSelectedPeriodId(periodId);
   }, []);
 
   const submit = useCallback(async () => {
-     if (!token) {
+    if (!token) {
       toast.error("⚠️ يرجى تسجيل الدخول أولاً");
       router.push("/login");
       return null;
@@ -394,24 +537,15 @@ export const useBookingForm = (
       );
 
       if (!bookingResult.success) {
-        toast.error(bookingResult.message || "حدث خطأ أثناء الحجز");
+        const errorMessage = extractErrorMessage(bookingResult.error || bookingResult.message);
+        toast.error(`❌ ${errorMessage}`);
         setIsSubmitting(false);
         return null;
       }
 
-      // عرض توستر نجاح الحجز
-      // toast.success("🎉 تم إنشاء الحجز بنجاح!", {
-      //   duration: 4000,
-      //   position: "top-center",
-      // });
-
-      // ❌ تم إزالة تحديث حالة الدفع إلى pending من هنا
-      // سيتم التحديث في صفحة payment-callback بعد العودة من بوابة الدفع
-
       // 3. معالجة الدفع
       setIsRedirecting(true);
 
-      // بناء روابط العودة
       const baseUrl = process.env.NEXT_PUBLIC_APP_URL || window.location.origin;
       const callbackUrl = `${baseUrl}/payment-callback`;
       const successUrl = `${baseUrl}/booking-success`;
@@ -440,7 +574,6 @@ export const useBookingForm = (
         resetForm();
 
         if (paymentResult.isCash) {
-          // الدفع النقدي: يتم التحديث فوراً (لأنه لا يوجد بوابة دفع)
           await UpdatePaymentStatusService.updatePaymentSuccess(
             bookingResult.uuid || uuid,
             paymentMethodId,
@@ -462,7 +595,6 @@ export const useBookingForm = (
 
           return { ...bookingResult, isCash: true };
         } else if (paymentResult.paymentUrl) {
-          // الدفع الإلكتروني: التوجيه إلى بوابة الدفع
           toast.success("🔄 جاري توجيهك إلى بوابة الدفع...", {
             duration: 3000,
             position: "top-center",
@@ -477,7 +609,6 @@ export const useBookingForm = (
             return null;
           }
 
-          // لا نقوم بتحديث الحالة هنا، بل نتركها لصفحة callback
           setTimeout(() => {
             window.location.href = paymentUrl;
           }, 1000);
@@ -486,7 +617,6 @@ export const useBookingForm = (
           setIsSubmitting(false);
           return { ...bookingResult, paymentUrl };
         } else {
-          // ❌ لم يتم استلام رابط
           await UpdatePaymentStatusService.updatePaymentFailed(
             bookingResult.uuid || uuid,
             paymentMethodId,
@@ -499,23 +629,22 @@ export const useBookingForm = (
           return null;
         }
       } else {
-        // ❌ فشل الدفع
         await UpdatePaymentStatusService.updatePaymentFailed(
           bookingResult.uuid || uuid,
           paymentMethodId,
           { error: paymentResult.message },
           token,
         );
-        toast.error(
-          `❌ ${paymentResult.message || "حدث خطأ أثناء معالجة الدفع"}`,
-        );
+        const errorMessage = extractErrorMessage(paymentResult.message);
+        toast.error(`❌ ${errorMessage}`);
         setIsRedirecting(false);
         setIsSubmitting(false);
         return null;
       }
     } catch (error: any) {
       console.error("❌ Submit error:", error);
-      toast.error(`❌ ${error.message || "حدث خطأ غير متوقع"}`);
+      const errorMessage = extractErrorMessage(error);
+      toast.error(`❌ ${errorMessage}`);
       setIsRedirecting(false);
       setIsSubmitting(false);
       return null;

@@ -12,19 +12,31 @@ import {
   FaTimesCircle,
   FaCreditCard,
   FaTimes,
+  FaCalendarAlt,
 } from "react-icons/fa";
+import { PiCalendarBlank } from "react-icons/pi";
 import { cn } from "@/src/lib/utils";
 import {
   getBookingDetails,
   checkExtension,
 } from "@/src/services/bookingApiService";
 import { BookingDetail } from "@/src/types/api";
-import { PaymentService, PaymentMethodType } from "@/src/services/paymentService";
+import {
+  PaymentService,
+  PaymentMethodType,
+} from "@/src/services/paymentService";
 import { UpdatePaymentStatusService } from "@/src/services/updatePaymentStatusService";
 import toast from "react-hot-toast";
 import ExtendBooking from "./ExtendBooking";
 import PaymentMethodsList from "@/src/components/common/PaymentMethodsList";
-
+import { RxCalendar } from "react-icons/rx";
+import { MdOutlinePayment } from "react-icons/md";
+import { FaMoneyBills } from "react-icons/fa6";
+import { RiCameraSwitchLine } from "react-icons/ri";
+import { IoShieldCheckmarkOutline } from "react-icons/io5";
+import { FaPercent } from "react-icons/fa";
+import { LiaMoneyBillWaveSolid } from "react-icons/lia";
+import { FaUser } from "react-icons/fa";
 interface BookingDetailsProps {
   bookingId: number;
   onBack: () => void;
@@ -125,7 +137,7 @@ export default function BookingDetails({
 
     setIsProcessingPayment(true);
     const token = localStorage.getItem("token");
-    
+
     try {
       if (!token) {
         toast.error("الرجاء تسجيل الدخول أولاً");
@@ -134,12 +146,13 @@ export default function BookingDetails({
 
       const paymentMethodId = parseInt(selectedPaymentMethod);
 
-      const updatePending = await UpdatePaymentStatusService.updatePaymentPending(
-        booking.uuid,
-        paymentMethodId,
-        undefined,
-        token
-      );
+      const updatePending =
+        await UpdatePaymentStatusService.updatePaymentPending(
+          booking.uuid,
+          paymentMethodId,
+          undefined,
+          token,
+        );
 
       if (!updatePending) {
         toast.error("حدث خطأ في تحديث حالة الدفع");
@@ -160,7 +173,7 @@ export default function BookingDetails({
           return_url: returnUrl,
           booking_id: booking.id,
         },
-        token
+        token,
       );
 
       if (result.success) {
@@ -168,18 +181,17 @@ export default function BookingDetails({
           await UpdatePaymentStatusService.updatePaymentSuccess(
             booking.uuid,
             paymentMethodId,
-            { payment_type: 'cash' },
-            token
+            { payment_type: "cash" },
+            token,
           );
 
           toast.success("تم اختيار الدفع النقدي عند الاستلام");
           setShowPaymentPopup(false);
           setSelectedPaymentMethod(null);
-          
+
           setTimeout(() => {
             window.location.href = "/profile?tab=bookings";
           }, 1500);
-          
         } else if (result.paymentUrl) {
           window.open(result.paymentUrl, "_blank");
           toast.success("تم توجيهك لبوابة الدفع");
@@ -189,8 +201,8 @@ export default function BookingDetails({
           await UpdatePaymentStatusService.updatePaymentFailed(
             booking.uuid,
             paymentMethodId,
-            { error: 'No payment URL received' },
-            token
+            { error: "No payment URL received" },
+            token,
           );
           toast.error("لم يتم استلام رابط الدفع");
         }
@@ -199,22 +211,22 @@ export default function BookingDetails({
           booking.uuid,
           paymentMethodId,
           { error: result.message },
-          token
+          token,
         );
         toast.error(result.message);
       }
     } catch (error: any) {
       console.error("Error processing payment:", error);
-      
+
       if (booking && selectedPaymentMethod) {
         await UpdatePaymentStatusService.updatePaymentFailed(
           booking.uuid,
           parseInt(selectedPaymentMethod),
-          { error: error.message || 'Unexpected error' },
-          token || undefined
+          { error: error.message || "Unexpected error" },
+          token || undefined,
         );
       }
-      
+
       toast.error(error.message || "حدث خطأ أثناء عملية الدفع");
     } finally {
       setIsProcessingPayment(false);
@@ -296,14 +308,14 @@ export default function BookingDetails({
 
       <div
         className={cn(
-          "bg-white rounded-2xl shadow-xl p-6 space-y-6",
+          "bg-[#FCF9F466] border p-3 lg:p-5 rounded-lg space-y-6",
           "transform transition-all duration-500 ease-out",
           isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8",
         )}
       >
         <div
           className={cn(
-            "flex items-center gap-4 shadow-lg p-3 rounded-2xl",
+            "flex items-center gap-4 shadow p-3 rounded-2xl",
             "transform transition-all duration-500 ease-out",
             isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8",
           )}
@@ -350,7 +362,7 @@ export default function BookingDetails({
               </div>
             </div>
             {booking.delivery_address && (
-              <div className="flex items-center gap-1 text-sm text-gray-600">
+              <div className="flex flex-wrap items-center gap-1 text-sm text-gray-600">
                 <p>يتم التوصيل في</p>
                 <span>{booking.address}</span>
               </div>
@@ -360,13 +372,21 @@ export default function BookingDetails({
 
         <div
           className={cn(
-            "space-y-4 bg-[#D2D6DB3D] p-4 rounded-xl",
+            "space-y-4 bg-[#FCF9F466] border p-3 lg:p-5 rounded-lg",
             "transform transition-all duration-500 ease-out",
             isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8",
           )}
           style={{ transitionDelay: "150ms" }}
         >
-          <h3 className="text-base font-bold text-[#191C1F]">تفاصيل الحجز</h3>
+          <div className="flex items-center gap-1 lg:gap-2">
+            <div className="shadow shadow-[#0000001A] p-2  rounded-full">
+              <RxCalendar className="w-5 h-5 text-[#012738] " />
+            </div>
+
+            <h3 className="text-base font-bold text-[#1F2937]">تاريخ الحجز</h3>
+          </div>
+
+          {/* import { RxCalendar } from "react-icons/rx"; */}
 
           <div className="space-y-3">
             <div className="flex items-center justify-between">
@@ -376,92 +396,81 @@ export default function BookingDetails({
               </p>
             </div>
 
-            <div className="flex items-center justify-between">
-              <p className="text-sm font-medium text-[#4F5352]">
-                تاريخ الاستلام
-              </p>
-              <div className="text-sm font-bold text-[#012738] text-left">
-                <p>{formatDate(booking.start_date)}</p>
-              </div>
-            </div>
-
-            <div className="flex items-center justify-between">
-              <p className="text-sm font-medium text-[#4F5352]">
-                تاريخ الإرجاع
-              </p>
-              <div className="text-sm font-bold text-[#012738] text-left">
-                <p>{formatDate(booking.end_date)}</p>
-              </div>
-            </div>
-          </div>
-
-          <p className="italic text-xs text-[#4F5352] border-t border-gray-200 pt-3">
-            يتوجب على المستأجر إعادة السيارة أو طلب تمديد الحجز لتجنب فرض أي
-            رسوم إضافية
-          </p>
-        </div>
-
-        <div
-          className={cn(
-            "space-y-3 bg-[#D2D6DB3D] p-4 rounded-xl",
-            "transform transition-all duration-500 ease-out",
-            isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8",
-          )}
-          style={{ transitionDelay: "250ms" }}
-        >
-          <h3 className="text-base font-bold text-[#191C1F]">طريقة الاستلام</h3>
-          <div className="space-y-2">
             <div className="flex items-start gap-3">
-              <FaMapMarkerAlt className="h-4 w-4 text-[#012738] mt-0.5" />
-              <div>
-                <p className="font-medium text-gray-800">
-                  {booking.delivery_type === "to_location"
-                    ? "توصيل إلى الموقع"
-                    : "استلام من الفرع"}
-                </p>
-                {booking.delivery_address && (
-                  <p className="text-sm text-gray-500">
-                    {booking.delivery_address}
+              <div className="flex-1">
+                <div className="flex items-center justify-between gap-0.5">
+                  <div className="flex items-center gap-1">
+                    <div className=" p-1  rounded-full">
+                      <PiCalendarBlank className="w-4 h-4 text-[#012738]" />
+                    </div>
+
+                    <p className="text-sm font-bold text-[#4F5352]">
+                      تاريخ الاستلام
+                    </p>
+                  </div>
+                  <p className="text-sm font-bold text-[#012738]">
+                    {formatDate(booking.start_date)}
                   </p>
-                )}
-                {booking.address && (
-                  <p className="text-sm text-gray-500">
-                    العنوان: {booking.address}
+                </div>
+                <div className="flex items-center justify-between mt-3">
+                  <div className="flex items-center gap-1">
+                    <div className=" p-1  rounded-full">
+                      <PiCalendarBlank className="w-4 h-4 text-[#012738]" />
+                    </div>
+
+                    <p className="text-sm font-bold text-[#4F5352]">
+                      تاريخ الإرجاع
+                    </p>
+                  </div>
+                  <p className="text-sm font-bold text-[#012738]">
+                    {formatDate(booking.end_date)}
                   </p>
-                )}
-                <div className="flex items-center gap-2 text-sm text-gray-500 mt-1">
-                  <FaCity className="h-3 w-3" />
-                  <span>المدينة: {booking.city}</span>
                 </div>
               </div>
+              <div className="flex flex-col items-center h-full">
+                <div className="flex-1 w-px bg-[#012738] min-h-3"></div>
+                <div className="w-2 h-2 rounded-full bg-[#012738]"></div>
+                <div className="flex-1 w-px bg-[#012738] min-h-6"></div>
+                <div className="w-2 h-2 rounded-full bg-[#012738] "></div>
+                <div className="flex-1 w-px bg-[#012738] min-h-3"></div>
+              </div>
             </div>
+
+            <p className=" text-xs font-bold text-center text-[#757575] pt-3">
+              عند انتهاء الحجز يرجى تسليم السيارة او تمديد الحجز
+            </p>
           </div>
         </div>
-
         <div
           className={cn(
-            "space-y-3 bg-[#D2D6DB3D] p-4 rounded-xl",
+            "space-y-3 bg-[#FCF9F466] border p-3 lg:p-5 rounded-lg",
             "transform transition-all duration-500 ease-out",
             isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8",
           )}
           style={{ transitionDelay: "300ms" }}
         >
-          <h3 className="text-base font-bold text-[#191C1F]">تفاصيل الدفع</h3>
+          <div className="flex items-center gap-1 lg:gap-2">
+            <div className="shadow shadow-[#0000001A] p-2  rounded-full">
+              <MdOutlinePayment className="w-5 h-5 text-[#012738] " />
+            </div>
 
+            <h3 className="text-base font-bold text-[#191C1F]">تفاصيل الدفع</h3>
+          </div>
           <div className="space-y-3">
             <div className="flex justify-between text-sm">
-              <span className="text-gray-600">السعر الأساسي</span>
               <div className="flex items-center gap-1">
-                <span className="font-bold text-gray-800">
+                  <div className="p-1 rounded-full">
+                    <FaMoneyBills className="w-5 h-5 text-[#012738] " />
+                  </div>
+
+                   <span className="text-gray-600">السعر الأساسي</span>
+                </div>
+            
+              <div className="flex items-center gap-1">
+                <span className="font-bold text-[#717182] text-sm">
                   {booking.price_breakdown.base_price}
                 </span>
-                <Image
-                  src="/images/SAR.png"
-                  alt="ريال"
-                  width={16}
-                  height={16}
-                  className="w-3 h-3"
-                />
+                <span className="text-[#717182] text-sm font-bold">ريال</span>
               </div>
             </div>
 
@@ -482,60 +491,111 @@ export default function BookingDetails({
             )}
 
             <div className="flex justify-between text-sm">
-              <span className="text-gray-600">الضريبة</span>
               <div className="flex items-center gap-1">
-                <span className="font-bold text-gray-800">
+                <div className="p-1 rounded-full">
+                  <FaPercent className="w-5 h-5 text-[#012738] " />
+                </div>
+
+                <span className="text-gray-600">ضريبة القيمة المضافة</span>
+              </div>
+
+              <div className="flex items-center gap-1">
+                <span className="font-bold text-[#717182] text-sm ">
                   {booking.price_breakdown.tax}
                 </span>
-                <Image
-                  src="/images/SAR.png"
-                  alt="ريال"
-                  width={16}
-                  height={16}
-                  className="w-3 h-3"
-                />
+                <span className="text-[#717182] text-sm font-bold">ريال</span>
               </div>
             </div>
 
             {parseFloat(booking.additional_services_total_price) > 0 && (
               <div className="flex justify-between text-sm">
-                <span className="text-gray-600">الخدمات الإضافية</span>
                 <div className="flex items-center gap-1">
-                  <span className="font-bold text-gray-800">
+                  <div className="p-1 rounded-full">
+                    <LiaMoneyBillWaveSolid className="w-5 h-5 text-[#012738] " />
+                  </div>
+
+                  <span className="text-gray-600">رسوم الخدمات الاضافية</span>
+                </div>
+
+                <div className="flex items-center gap-1 text-[#717182] text-sm font-bold">
+                  <span className="text-[#717182] text-sm font-bold">
                     {booking.additional_services_total_price}
                   </span>
-                  <Image
-                    src="/images/SAR.png"
-                    alt="ريال"
-                    width={16}
-                    height={16}
-                    className="w-3 h-3"
-                  />
+                   <span className="text-[#717182] text-sm font-bold">ريال</span>
                 </div>
               </div>
             )}
 
             <div className="flex justify-between text-base font-bold pt-2 border-t border-gray-200">
-              <span>الإجمالي</span>
+              <span className="text-[#0079AB] text-base font-bold">الإجمالي</span>
               <div className="flex items-center gap-1">
-                <span className="text-lg text-[#012738]">
+                <span className="text-base text-[#0079AB]">
                   {booking.price_breakdown.total}
                 </span>
-                <Image
-                  src="/images/SAR.png"
-                  alt="ريال"
-                  width={20}
-                  height={20}
-                  className="w-4 h-4"
-                />
+                <span className="text-[#0079AB] text-base font-bold">ريال</span>
               </div>
             </div>
           </div>
         </div>
-
         <div
           className={cn(
-            "flex items-center justify-between gap-3 p-3 rounded-xl bg-[#D2D6DB3D]",
+            "space-y-3 bg-[#FCF9F466] border p-3 lg:p-5 rounded-lg",
+            "transform transition-all duration-500 ease-out",
+            isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8",
+          )}
+          style={{ transitionDelay: "250ms" }}
+        >
+          <h3 className="text-base font-bold text-[#191C1F]">طريقة الاستلام</h3>
+          <div className="space-y-2">
+            <div className="flex items-start gap-3">
+              <FaMapMarkerAlt className="h-4 w-4 text-[#012738] mt-0.5" />
+              <div>
+                <p className="font-bold text-sm text-[#191C1F]">
+                  {booking.delivery_type === "to_location"
+                    ? "توصيل الي موقعك الحالي"
+                    : "استلام من الفرع"}
+                </p>
+                {booking.delivery_address && (
+                  <p className="text-sm text-gray-500">
+                    {booking.delivery_address}
+                  </p>
+                )}
+              
+              
+              </div>
+            </div>
+          </div>
+        </div>
+   {/* قسم بيانات العميل */}
+<div
+  className={cn(
+    "space-y-3 bg-[#FCF9F466] border p-3 lg:p-5 rounded-lg",
+    "transform transition-all duration-500 ease-out",
+    isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8",
+  )}
+  style={{ transitionDelay: "275ms" }}
+>
+  <div className="flex items-center gap-1 lg:gap-2">
+    <div className="shadow-lg shadow-[#0000001A] p-2 rounded-full">
+      <FaUser className="w-5 h-5 text-[#012738]" />
+    </div>
+    <h3 className="text-base font-bold text-[#191C1F]">بيانات العميل</h3>
+  </div>
+  <div className="grid grid-cols-2 gap-3">
+    <div className="flex flex-col justify-between gap-1 text-sm">
+      <span className="text-gray-600">الاسم</span>
+      <span className="font-bold text-[#012738]">{booking.user.name}</span>
+    </div>
+    <div className="flex flex-col justify-between text-sm gap-1">
+      <span className="text-gray-600">رقم الجوال</span>
+      <span className="font-bold text-[#012738]">{booking.user.phone}</span>
+    </div>
+    
+  </div>
+</div>
+        <div
+          className={cn(
+            "flex items-center justify-between gap-3 bg-[#FCF9F466] border p-3 lg:p-5 rounded-lg",
             "transform transition-all duration-500 ease-out",
             isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8",
           )}
@@ -612,24 +672,27 @@ export default function BookingDetails({
             )}
           </div>
         )}
- 
+
         {/* رسالة عدم إمكانية التمديد - تظهر فقط عندما تكون حالة الدفع مدفوع */}
-        {!isCheckingExtension && isPaymentPaid && !canExtend && booking.status !== "completed" && (
-          <div
-            className={cn(
-              "pt-2",
-              "transform transition-all duration-500 ease-out",
-              isVisible
-                ? "opacity-100 translate-y-0"
-                : "opacity-0 translate-y-8",
-            )}
-            style={{ transitionDelay: "400ms" }}
-          >
-            <div className="text-center text-sm text-gray-500 bg-gray-50 p-3 rounded-xl">
-              <p>لا يمكن تمديد هذا الحجز في الوقت الحالي</p>
+        {!isCheckingExtension &&
+          isPaymentPaid &&
+          !canExtend &&
+          booking.status !== "completed" && (
+            <div
+              className={cn(
+                "pt-2",
+                "transform transition-all duration-500 ease-out",
+                isVisible
+                  ? "opacity-100 translate-y-0"
+                  : "opacity-0 translate-y-8",
+              )}
+              style={{ transitionDelay: "400ms" }}
+            >
+              <div className="text-center text-sm text-gray-500 bg-gray-50 p-3 rounded-xl">
+                <p>لا يمكن تمديد هذا الحجز في الوقت الحالي</p>
+              </div>
             </div>
-          </div>
-        )}
+          )}
 
         {/* رسالة للحجز غير المدفوع - عدم إمكانية التمديد */}
         {/* {!isCheckingExtension && isPaymentPending && (

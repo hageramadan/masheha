@@ -86,7 +86,7 @@ export default function PaymentMethodsList({
   }
 
   return (
-    <div className="space-y-3">
+    <div className=" grid grid-cols-2 lg:grid-cols-2 gap-3">
       {paymentMethods.map((method) => {
         const isSelected = selectedMethod === method.id;
 
@@ -96,13 +96,13 @@ export default function PaymentMethodsList({
             type="button"
             onClick={() => onSelect(method.id)}
             className={cn(
-              "w-full flex items-center gap-2 p-4 rounded-xl border transition-all duration-100 text-right",
+              "w-full flex items-center gap-2 p-2 rounded-lg border transition-all duration-100 text-right",
               isSelected
                 ? "border-primary bg-primary/5 ring-2 ring-primary/20"
                 : "border-gray-200 hover:border-primary/30 hover:bg-gray-50",
             )}
           >
-            <div className="w-14 h-10 shrink-0 flex items-center justify-center">
+            <div className="w-9 lg:w-12 h-7 shrink-0 flex items-center justify-center">
               <Image
                 src={method.image}
                 alt={method.name}
@@ -118,10 +118,8 @@ export default function PaymentMethodsList({
             </div>
 
             <div className="flex-1">
-              <span className="font-medium text-gray-800">{method.name}</span>
-              {method.description && (
-                <p className="text-xs text-gray-500">{method.description}</p>
-              )}
+              <p className="font-bold lg:font-medium text-gray-800 text-[10px] lg:text-sm">{method.name}</p>
+             
             </div>
 
             <div

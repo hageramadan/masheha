@@ -4,6 +4,9 @@ import Image from "next/image";
 import { MdOutlineAccessTime } from "react-icons/md";
 import { TbWheel } from "react-icons/tb";
 import { RxLayers } from "react-icons/rx";
+import { FaRegUser } from "react-icons/fa6";
+import { MdOutlineSensorDoor } from "react-icons/md";
+
 interface CarDetailsProps {
   car: {
     id: number;
@@ -41,16 +44,16 @@ export default function CarDetails({
   const period = isMonthly ? "الشهر" : "اليوم";
 
   return (
-    <div className="bg-white rounded-2xl shadow-lg overflow-hidden">
+    <div className="bg-white rounded-2xl border overflow-hidden">
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4 p-4 md:p-6">
         <div className="md:col-span-1">
-          <div className="relative h-48 md:h-56 lg:h-64 overflow-hidden ">
+          <div className="relative min-h-30 max-h-full h-43.5 md:h-56 lg:h-43 overflow-hidden ">
             {imageSrc ? (
               <Image
                 src={imageSrc}
                 alt={car.name}
                 fill
-                className="object-contain p-3"
+                className="object-cover object-center p-0"
                 priority
                 onError={(e) => {
                   console.error("❌ Image failed to load:", imageSrc);
@@ -64,15 +67,18 @@ export default function CarDetails({
             )}
           </div>
         </div>
-           
-        <div className="md:col-span-2 space-y-3  w-full md:w-[80%] mx-auto">
+
+        <div className="md:col-span-2 space-y-2  w-full md:w-[80%] mx-auto">
           <div className="flex items-center justify-between">
-            <h2 className="text-xl md:text-2xl font-bold text-gray-800 line-clamp-1">
-              {car.name}
-              <span className="text-sm lg:text-base font-bold text-gray-600 ms-1">
+             <div className="flex items-center gap-2">
+               <span className="text-sm lg:text-base font-bold text-gray-600 ms-1">
                 {car.year}
               </span>
+            <h2 className="text-xl md:text-2xl font-bold text-gray-800 line-clamp-1">
+              {car.name}
+            
             </h2>
+             </div>
             <div className="col-span-1 md:hidden">
               <div className="flex items-center gap-1 lg:gap-2 justify-end">
                 <p className="text-2xl md:text-3xl font-bold text-primary">
@@ -84,9 +90,21 @@ export default function CarDetails({
               </div>
             </div>
           </div>
+          <div className="space-y-2">
+            <p className="text-base text-[#717182]">أقل مدة للتأجير مع خدمة التوصيل (2 أيام)</p>
 
+            <div className="flex items-center gap-2">
+              <div className="flex items-center gap-1">
+              <FaRegUser className="text-[#012738] w-4 h-4"/>
+              <p className="text-[#012738] text-base">{car.seats} مقاعد</p>
+            </div>
+            <div className="flex items-center gap-1">
+              <MdOutlineSensorDoor className="text-[#012738] w-4 h-4" />
+              <p className="text-[#012738] text-base">{car.doors} ابواب</p>
+            </div>
+            </div>
+          </div>
           <div className="grid grid-cols-1 gap-2">
-          
             {/* <div className="md:col-span-2 space-y-3">
               {advantages.length > 0 && (
                 <div>
@@ -110,13 +128,12 @@ export default function CarDetails({
               )}
             </div> */}
 
-            
-            <div className="md:col-span-2 space-y-2">
+            {/* <div className="md:col-span-2 space-y-2">
               <p className="text-sm lg:text-base font-bold text-gray-700 my-2">
                 شروط التأجير
               </p>
               <div className="space-y-1.5">
-                {/* {conditions.map((condition, index) => (
+                {conditions.map((condition, index) => (
                   <div
                     key={index}
                     className="flex items-center gap-2 text-sm lg:text-base text-gray-600"
@@ -124,7 +141,7 @@ export default function CarDetails({
                     <GoDotFill className="text-[#717182] text-[10px] shrink-0" />
                     <span className="line-clamp-1">{condition}</span>
                   </div>
-                ))} */}
+                ))}
                 <ul className="list-disc px-4 md:list-outside space-y-2 text-gray-600 text-[15px]">
                   <li>الحد الأدنى للعمر: العمر 25 سنة وأكثر</li>
                   <li>
@@ -158,11 +175,10 @@ export default function CarDetails({
                  
                 </div>
               </div>
-            </div>
+            </div> */}
           </div>
         </div>
 
-      
         <div className="hidden md:block md:col-span-1">
           <div className="flex items-center gap-1 lg:gap-2 justify-end">
             <p className="text-2xl md:text-3xl font-bold text-primary">

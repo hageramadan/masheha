@@ -17,11 +17,10 @@ export default function BookingServices({
 }: BookingServicesProps) {
   if (services.length === 0) return null;
 
-  // التأكد من أن أول خدمة محددة دائمًا
   useEffect(() => {
     if (services.length > 0) {
       const firstServiceId = services[0].id;
-      // لو الخدمة الأولى مش في المحددين، نضيفها
+      
       if (!selectedServices.includes(firstServiceId)) {
         onToggle(firstServiceId);
       }
@@ -29,22 +28,22 @@ export default function BookingServices({
   }, [services, selectedServices, onToggle]);
 
   const handleToggle = (id: string) => {
-    // ❌ منع إلغاء تحديد أول خدمة
+    
     if (id === services[0]?.id) {
-      // لو كانت أول خدمة و محاولة إلغائها → نمنعها
+     
       if (selectedServices.includes(id)) {
-        return; // ممنوع الإلغاء
+        return; 
       }
-      // لو مش محددة → نحددها (عادي)
+      
       onToggle(id);
       return;
     }
-    // باقي الخدمات عادي
+   
     onToggle(id);
   };
 
   return (
-    <div className="bg-white rounded-2xl border p-3 lg:p-6 space-y-4">
+    <div className="bg-[#FCF9F466]  rounded-lg border p-3 lg:p-5 space-y-4">
       <div className="flex items-center justify-between">
         <h2 className="text-base lg:text-lg font-bold text-gray-800">الخدمات الإضافية</h2>
       </div>
@@ -65,16 +64,17 @@ export default function BookingServices({
                   : 'border-gray-200 hover:border-primary/30'
               } ${isFirst ? 'cursor-default' : 'cursor-pointer'}`}
             >
-              <div className="text-right flex flex-col gap-2">
+              
                 <p className="text-sm lg:text-base text-[#4F5352]">
                   {service.name}
                   
                 </p>
-                <span className="text-sm lg:text-base font-bold text-primary">
-                  {service.price} ريال
-                </span>
-              </div>
+               
+           
               <div className="flex items-center gap-4">
+                 <p className="text-sm lg:text-base font-bold text-primary">
+                  {service.price} ريال
+                </p>
                 <div
                   className={`w-5 h-5 rounded border-2 flex items-center justify-center transition-colors ${
                     isSelected

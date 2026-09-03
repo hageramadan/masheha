@@ -10,7 +10,7 @@ import BookingPayment from "./BookingPayment";
 import BookingSummary from "./BookingSummary";
 import { FaLocationDot } from "react-icons/fa6";
 import PhoneInput from "../contact/PhoneInput";
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { format } from "date-fns";
 import { ar } from "date-fns/locale";
 import toast from "react-hot-toast";
@@ -43,6 +43,12 @@ import {
 import { usePhoneAuth } from "@/src/hooks/usePhoneAuth";
 // استيراد OTP Popup
 import OTPPopup from "./OTPPopup";
+
+// مكون السلايدر المخصص
+import DateSlider from "./DateSlider";
+import TimeSlider from "./TimeSlider";
+import Image from "next/image";
+import DateTimeSlider from "./DateTimeSlider";
 
 interface BookingFormProps {
   carId: string;
@@ -83,11 +89,16 @@ export default function BookingForm({
     services,
     rentalCompanyId,
     bookingType,
-    car?.name || "سياره"
+    car?.name || "سياره",
   );
 
   // Firebase Phone Auth
-  const { sendOTP, verifyOTP, isOTPSent, isLoading: isOTPLoading } = usePhoneAuth();
+  const {
+    sendOTP,
+    verifyOTP,
+    isOTPSent,
+    isLoading: isOTPLoading,
+  } = usePhoneAuth();
 
   const [phoneNumber, setPhoneNumber] = useState("");
   const [countryCode, setCountryCode] = useState("+966");
@@ -96,31 +107,54 @@ export default function BookingForm({
   const [selectedAddress, setSelectedAddress] = useState<string>("");
   const [phoneInputKey, setPhoneInputKey] = useState(0);
 
+  // ========== فترات الحجز اليومي ==========
   const [availableDates, setAvailableDates] = useState<AvailableDate[]>([]);
   const [availableTimes, setAvailableTimes] = useState<AvailableHour[]>([]);
-  const [isLoadingPeriods, setIsLoadingPeriods] = useState(true);
-
-  // حالات الحجز الشهري
+  
+  // ========== فترات الحجز الشهري ==========
   const [availableMonths, setAvailableMonths] = useState<AvailableMonth[]>([]);
   const [selectedMonth, setSelectedMonth] = useState<AvailableMonth | null>(
-    null
+    null,
   );
   const [selectedPeriod, setSelectedPeriod] = useState<AvailablePeriod | null>(
-    null
+    null,
   );
+  const [monthlyAvailableDates, setMonthlyAvailableDates] = useState<AvailableDate[]>([]);
+  const [monthlyAvailableTimes, setMonthlyAvailableTimes] = useState<AvailableHour[]>([]);
+
+  const [isLoadingPeriods, setIsLoadingPeriods] = useState(true);
 
   // حالات OTP
   const [otpCode, setOtpCode] = useState("");
   const [isPhoneVerified, setIsPhoneVerified] = useState(false);
   const [showOTPInput, setShowOTPInput] = useState(false);
-  
+
   // حالة تسجيل المستخدم
   const [isUserRegistered, setIsUserRegistered] = useState(false);
-  
+
   // حالة البوب اب
   const [isOTPPopupOpen, setIsOTPPopupOpen] = useState(false);
 
+  // قائمة التواريخ المتاحة للتحديد في السلايدر
+  const [availableDateList, setAvailableDateList] = useState<Date[]>([]);
+  // الفهرس المختار في سلايدر التاريخ
+  const [selectedDateIndex, setSelectedDateIndex] = useState<number>(0);
+  // قائمة الأوقات المتاحة للتحديد في السلايدر الوقت
+  const [availableTimeList, setAvailableTimeList] = useState<string[]>([]);
+  // الفهرس المختار في سلايدر الوقت
+  const [selectedTimeIndex, setSelectedTimeIndex] = useState<number>(0);
+
   const minimumDays = car?.minimumDays || car?.minimum_days || 1;
+  // ========== الحجز الشهري ==========
+  const [monthlyDateList, setMonthlyDateList] = useState<Date[]>([]);
+  const [monthlyTimeList, setMonthlyTimeList] = useState<string[]>([]);
+  const [selectedMonthlyDateIndex, setSelectedMonthlyDateIndex] =
+    useState<number>(0);
+  const [selectedMonthlyTimeIndex, setSelectedMonthlyTimeIndex] =
+    useState<number>(0);
+
+  // ✅ حالة منفصلة لعدد الأشهر (للحجز الشهري فقط)
+  const [rentalMonths, setRentalMonths] = useState<number>(1);
 
   // دالة التحقق من صحة النموذج بالكامل
   const validateForm = useCallback(() => {
@@ -144,13 +178,13 @@ export default function BookingForm({
     }
 
     // 3️⃣ التحقق من تاريخ الاستلام (للحجز اليومي)
-    if (bookingType === "daily" && !rentalDate) {
+    if (!rentalDate) {
       toast.error("يرجى اختيار تاريخ الاستلام");
       return false;
     }
 
     // 4️⃣ التحقق من وقت الاستلام (للحجز اليومي)
-    if (bookingType === "daily" && !rentalTime) {
+    if (!rentalTime) {
       toast.error("يرجى اختيار وقت الاستلام");
       return false;
     }
@@ -162,8 +196,8 @@ export default function BookingForm({
     }
 
     // 6️⃣ التحقق من الشهر (للحجز الشهري)
-    if (bookingType === "monthly" && !selectedMonth) {
-      toast.error("يرجى اختيار الشهر");
+    if (bookingType === "monthly" && !selectedPeriod) {
+      toast.error("يرجى اختيار فترة الحجز");
       return false;
     }
 
@@ -180,7 +214,7 @@ export default function BookingForm({
     }
 
     return true;
-  }, [bookingData, bookingType, minimumDays, selectedAddress, selectedMonth]);
+  }, [bookingData, bookingType, minimumDays, selectedAddress, selectedPeriod]);
 
   // تفريغ رقم الهاتف عند تغيير bookingData.customerPhone
   useEffect(() => {
@@ -226,8 +260,18 @@ export default function BookingForm({
     toast.success("🔄 تم إعادة تعيين النموذج");
   }, [resetForm]);
 
+  // تحويل الوقت من 24 ساعة إلى 12 ساعة مع ص/م
+  const formatTimeTo12Hour = (time: string): string => {
+    if (!time) return "";
+    const [hours, minutes] = time.split(":").map(Number);
+    const period = hours >= 12 ? "م" : "ص";
+    const hour12 = hours % 12 || 12;
+    return `${hour12}:${String(minutes).padStart(2, "0")} ${period}`;
+  };
+
+  // ========== جلب فترات الحجز (اليومي والشهري معاً) ==========
   useEffect(() => {
-    const fetchAvailablePeriods = async () => {
+    const fetchAllPeriods = async () => {
       try {
         setIsLoadingPeriods(true);
         const carIdNumber = parseInt(carId);
@@ -238,71 +282,136 @@ export default function BookingForm({
           return;
         }
 
-        const data = await CarService.getAvailablePeriods(
+        // 🔹 1️⃣ جلب فترات الحجز اليومي (للتواريخ والأوقات) - هذا هو المصدر الرئيسي
+        const dailyData = await CarService.getAvailablePeriods(
           carIdNumber,
           officeId,
-          bookingType
+          "daily",
         );
 
-        console.log("📥 Available Periods Data:", data);
+        console.log("📥 Daily Periods Data:", dailyData);
 
+        // تخزين بيانات اليومي
+        setAvailableDates(dailyData.available_dates || []);
+        const dailyDates = dailyData.available_dates
+          .filter((d) => d.is_available)
+          .map((d) => new Date(d.date));
+        setAvailableDateList(dailyDates);
+
+        // 🔹 2️⃣ جلب فترات الحجز الشهري (للأشهر والفترات) - اختياري للحصول على period_id
+        const monthlyData = await CarService.getAvailablePeriods(
+          carIdNumber,
+          officeId,
+          "monthly",
+        );
+
+        console.log("📥 Monthly Periods Data:", monthlyData);
+
+        // ========== معالجة الحجز الشهري ==========
         if (bookingType === "monthly") {
-          if (!data.available_dates || data.available_dates.length === 0) {
-            if (data.available_months && data.available_months.length > 0) {
-              const months = getAvailableMonths(data);
-              setAvailableMonths(months);
+          // ✅ استخدام التواريخ من dailyData مباشرة (بدون تصفية)
+          setMonthlyDateList(dailyDates);
 
-              const firstMonth = getFirstAvailableMonth(data);
-              if (firstMonth) {
-                setSelectedMonth(firstMonth);
-                if (firstMonth.available_periods.length > 0) {
-                  const period = firstMonth.available_periods[0];
-                  setSelectedPeriod(period);
-                  updateField("rentalDate", firstMonth.month);
-                  updateField("rentalDays", period.days_count);
-                  setPeriodId(period.id);
-                }
-              }
+          // محاولة الحصول على period_id إذا كان متاحًا من monthlyData
+          if (monthlyData.available_months && monthlyData.available_months.length > 0) {
+            const months = monthlyData.available_months.filter(
+              (month: any) => month.is_available,
+            );
+            setAvailableMonths(months);
+
+            // اختيار أول شهر وفترة متاحة افتراضيًا للحصول على period_id
+            if (months.length > 0 && months[0].available_periods.length > 0) {
+              const firstPeriod = months[0].available_periods[0];
+              setSelectedPeriod(firstPeriod);
+              setPeriodId(firstPeriod.id);
+              updateField("rentalDays", firstPeriod.days_count);
+              
+              // ✅ حساب عدد الأشهر من days_count (شهر = 30 يوم)
+              const monthsCount = Math.max(1, Math.round(firstPeriod.days_count / 30));
+              setRentalMonths(monthsCount);
             }
           } else {
-            setAvailableDates(data.available_dates || []);
-            if (bookingData.rentalDate) {
-              const selectedDate = data.available_dates.find(
-                (d) => d.date === bookingData.rentalDate
-              );
-              if (selectedDate) {
-                setAvailableTimes(selectedDate.available_hours || []);
-              }
-            }
+            console.warn("⚠️ No monthly data available, period_id will be null");
+            setPeriodId(0);
           }
-        } else {
-          setAvailableDates(data.available_dates || []);
-          if (bookingData.rentalDate) {
-            const selectedDate = data.available_dates.find(
-              (d) => d.date === bookingData.rentalDate
+
+          // اختيار أول تاريخ تلقائيًا (من dailyDates)
+          if (dailyDates.length > 0) {
+            const firstDate = dailyDates[0];
+            const firstDateStr = format(firstDate, "yyyy-MM-dd");
+
+            // حفظ التاريخ
+            updateField("rentalDate", firstDateStr);
+
+            // البحث عن بيانات اليوم للحصول على الأوقات
+            const dailyDate = dailyData.available_dates.find(
+              (date) => date.date === firstDateStr,
             );
-            if (selectedDate) {
-              setAvailableTimes(selectedDate.available_hours || []);
+
+            if (dailyDate) {
+              const times = dailyDate.available_hours
+                .filter((hour) => hour.is_available)
+                .map((hour) => hour.time);
+
+              setMonthlyTimeList(times);
+
+              if (times.length > 0) {
+                updateField("rentalTime", times[0]);
+                setSelectedMonthlyTimeIndex(0);
+              }
             }
           }
         }
+
+        // تعيين التاريخ الأول تلقائياً للحجز اليومي
+        if (bookingType === "daily" && dailyDates.length > 0 && !bookingData.rentalDate) {
+          const firstDate = dailyDates[0];
+          const dateStr = format(firstDate, "yyyy-MM-dd");
+          updateField("rentalDate", dateStr);
+          setSelectedDateIndex(0);
+
+          // جلب أوقات هذا التاريخ
+          const selectedDate = dailyData.available_dates.find(
+            (d) => d.date === dateStr,
+          );
+          if (selectedDate) {
+            const times = selectedDate.available_hours
+              .filter((h) => h.is_available)
+              .map((h) => h.time);
+            setAvailableTimeList(times);
+            if (times.length > 0) {
+              updateField("rentalTime", times[0]);
+              setSelectedTimeIndex(0);
+            }
+          }
+        }
+
       } catch (error) {
-        console.log("Error fetching available periods:", error);
+        console.error("Error fetching periods:", error);
       } finally {
         setIsLoadingPeriods(false);
       }
     };
 
-    fetchAvailablePeriods();
+    fetchAllPeriods();
   }, [carId, car?.providerId, car?.office?.id, bookingType]);
 
+  // ========== تحديث الأوقات عند تغيير التاريخ (للحجز اليومي) ==========
   useEffect(() => {
     if (bookingData.rentalDate && availableDates.length > 0) {
       const selectedDate = availableDates.find(
-        (d) => d.date === bookingData.rentalDate
+        (d) => d.date === bookingData.rentalDate,
       );
       if (selectedDate) {
         setAvailableTimes(selectedDate.available_hours || []);
+        const times = selectedDate.available_hours
+          .filter((h) => h.is_available)
+          .map((h) => h.time);
+        setAvailableTimeList(times);
+        setSelectedTimeIndex(0);
+        if (times.length > 0) {
+          updateField("rentalTime", times[0]);
+        }
       }
     }
   }, [bookingData.rentalDate, availableDates]);
@@ -327,8 +436,10 @@ export default function BookingForm({
 
   // دالة تنسيق رقم الهاتف لصيغة Firebase
   const formatPhoneNumber = (phone: string, countryCode: string) => {
-    const cleanPhone = phone.replace(/[^0-9]/g, '');
-    const phoneWithoutZero = cleanPhone.startsWith('0') ? cleanPhone.slice(1) : cleanPhone;
+    const cleanPhone = phone.replace(/[^0-9]/g, "");
+    const phoneWithoutZero = cleanPhone.startsWith("0")
+      ? cleanPhone.slice(1)
+      : cleanPhone;
     return `${countryCode}${phoneWithoutZero}`;
   };
 
@@ -353,22 +464,16 @@ export default function BookingForm({
         country_code: countryCode || "+966",
       };
 
-      // toast.loading("جاري إنشاء الحساب...", { id: "register" });
-      
       const response = await register(registerData);
-      
+
       if (!response?.result) {
-        // toast.error("❌ فشل إنشاء الحساب", { id: "register" });
         return false;
       }
 
       setIsUserRegistered(true);
-      // toast.success("تم إنشاء الحساب بنجاح", { id: "register" });
       return true;
-      
     } catch (error: any) {
       console.error("Register error:", error);
-      // toast.error(error?.message || "❌ حدث خطأ أثناء إنشاء الحساب");
       return false;
     }
   };
@@ -383,11 +488,10 @@ export default function BookingForm({
 
     const formattedPhone = formatPhoneNumber(phone, countryCode);
     const sent = await sendOTP(formattedPhone);
-    
+
     if (sent) {
       setShowOTPInput(true);
-      setIsOTPPopupOpen(true); // فتح البوب اب
-      
+      setIsOTPPopupOpen(true);
       return true;
     }
     return false;
@@ -399,7 +503,7 @@ export default function BookingForm({
     if (user) {
       setIsPhoneVerified(true);
       setShowOTPInput(false);
-      setIsOTPPopupOpen(false); 
+      setIsOTPPopupOpen(false);
       await submit();
       return true;
     }
@@ -459,41 +563,95 @@ export default function BookingForm({
   const handleLocationSelect = async (
     lat: number,
     lng: number,
-    address: string
+    address: string,
   ) => {
     setSelectedAddress(address);
     updateField(
       "pickupLocation",
-      address || `${lat.toFixed(6)}, ${lng.toFixed(6)}`
+      address || `${lat.toFixed(6)}, ${lng.toFixed(6)}`,
     );
     updateField(
       "pickupAddress",
-      address || `${lat.toFixed(6)}, ${lng.toFixed(6)}`
+      address || `${lat.toFixed(6)}, ${lng.toFixed(6)}`,
     );
     updateField("pickupLat" as any, lat);
     updateField("pickupLng" as any, lng);
   };
 
-  const generateTimeOptions = () => {
-    if (availableTimes.length > 0) {
-      return availableTimes
-        .filter((hour) => hour.is_available)
-        .map((hour) => hour.time);
-    }
+  // دالة معالجة اختيار التاريخ من السلايدر (للحجز اليومي)
+  const handleDateSelect = (date: Date) => {
+    const dateStr = format(date, "yyyy-MM-dd");
+    updateField("rentalDate", dateStr);
 
-    const times = [];
-    for (let i = 9; i <= 23; i++) {
-      const hour = String(i).padStart(2, "0");
-      times.push(`${hour}:00`);
-      if (i < 23) {
-        times.push(`${hour}:30`);
+    const selectedDate = availableDates.find((d) => d.date === dateStr);
+    if (selectedDate) {
+      const times = selectedDate.available_hours
+        .filter((h) => h.is_available)
+        .map((h) => h.time);
+      setAvailableTimeList(times);
+      if (times.length > 0) {
+        updateField("rentalTime", times[0]);
+        setSelectedTimeIndex(0);
       }
     }
-    return times;
   };
 
-  const timeOptions = generateTimeOptions();
+  // دالة معالجة اختيار التاريخ للحجز الشهري
+  const handleMonthlyDateSelect = (date: Date) => {
+    const dateStr = format(date, "yyyy-MM-dd");
 
+    // مهم: الشهر بصيغة 2026-11
+    const monthKey = dateStr.slice(0, 7);
+
+    // حفظ التاريخ الحقيقي
+    updateField("rentalDate", dateStr);
+
+    // البحث عن الشهر في Monthly API
+    const month = availableMonths.find(
+      (m) => m.month === monthKey && m.is_available,
+    );
+
+    if (month) {
+      setSelectedMonth(month);
+
+      const period = month.available_periods[0];
+
+      if (period) {
+        setSelectedPeriod(period);
+        setPeriodId(period.id);
+        updateField("rentalDays", period.days_count);
+        
+        // ✅ حساب عدد الأشهر من days_count
+        const monthsCount = Math.max(1, Math.round(period.days_count / 30));
+        setRentalMonths(monthsCount);
+      }
+    }
+
+    // جلب الأوقات من Daily API
+    const selectedDate = availableDates.find(
+      (d) => d.date === dateStr,
+    );
+
+    if (selectedDate) {
+      const times = selectedDate.available_hours
+        .filter((h) => h.is_available)
+        .map((h) => h.time);
+
+      setMonthlyTimeList(times);
+
+      if (times.length > 0) {
+        updateField("rentalTime", times[0]);
+        setSelectedMonthlyTimeIndex(0);
+      }
+    }
+  };
+
+  // دالة معالجة اختيار الوقت من السلايدر
+  const handleTimeSelect = (time: string) => {
+    updateField("rentalTime", time);
+  };
+
+  // دوال التحكم في عدد الأيام (للحجز اليومي)
   const incrementDays = () => {
     const currentDays = bookingData.rentalDays || minimumDays;
     updateField("rentalDays", currentDays + 1);
@@ -520,6 +678,42 @@ export default function BookingForm({
     }
   };
 
+  // ✅ دوال التحكم في عدد الأشهر (للحجز الشهري)
+  const incrementMonths = () => {
+    const newMonths = (rentalMonths || 1) + 1;
+    setRentalMonths(newMonths);
+    // تحديث عدد الأيام بناءً على عدد الأشهر (شهر = 30 يوم)
+    const newDays = newMonths * 30;
+    updateField("rentalDays", newDays);
+  };
+
+  const decrementMonths = () => {
+    const currentMonths = rentalMonths || 1;
+    if (currentMonths > 1) {
+      const newMonths = currentMonths - 1;
+      setRentalMonths(newMonths);
+      // تحديث عدد الأيام بناءً على عدد الأشهر (شهر = 30 يوم)
+      const newDays = newMonths * 30;
+      updateField("rentalDays", newDays);
+    } else {
+      toast.error("الحد الأدنى للحجز هو شهر واحد");
+    }
+  };
+
+  const handleMonthsChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = parseInt(e.target.value);
+    if (!isNaN(value) && value >= 1) {
+      setRentalMonths(value);
+      // تحديث عدد الأيام بناءً على عدد الأشهر (شهر = 30 يوم)
+      const newDays = value * 30;
+      updateField("rentalDays", newDays);
+    } else if (!isNaN(value) && value < 1) {
+      toast.error("الحد الأدنى للحجز هو شهر واحد");
+      setRentalMonths(1);
+      updateField("rentalDays", 30);
+    }
+  };
+
   const formatDate = (date: Date | null) => {
     if (!date) return "";
     return format(date, "dd/MM/yyyy", { locale: ar });
@@ -529,11 +723,15 @@ export default function BookingForm({
   const handleMonthSelect = (month: AvailableMonth) => {
     setSelectedMonth(month);
     if (month.available_periods.length > 0) {
-        const period = month.available_periods[0];
-        setSelectedPeriod(period);
-        updateField("rentalDate", month.month);
-        updateField("rentalDays", period.days_count);
-        setPeriodId(period.id); 
+      const period = month.available_periods[0];
+      setSelectedPeriod(period);
+      updateField("rentalDate", month.month);
+      updateField("rentalDays", period.days_count);
+      setPeriodId(period.id);
+      
+      // ✅ حساب عدد الأشهر من days_count
+      const monthsCount = Math.max(1, Math.round(period.days_count / 30));
+      setRentalMonths(monthsCount);
     }
   };
 
@@ -545,7 +743,6 @@ export default function BookingForm({
       return (
         <div className="text-center py-4">
           <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin mx-auto"></div>
-          {/* <p className="text-sm text-gray-500 mt-2">جاري تحميل الأشهر المتاحة...</p> */}
         </div>
       );
     }
@@ -574,7 +771,7 @@ export default function BookingForm({
               "w-full px-4 py-6 h-auto border-2 rounded-xl focus:ring-0 focus:ring-offset-0",
               errors.rentalDate
                 ? "border-red-500"
-                : "border-gray-200 focus:border-primary"
+                : "border-gray-200 focus:border-primary",
             )}
           >
             <SelectValue placeholder="اختر الشهر" />
@@ -597,23 +794,16 @@ export default function BookingForm({
           </SelectContent>
         </Select>
 
-        {/* {selectedMonth && selectedPeriod && (
-          <div className="mt-4 p-4 bg-green-50 border border-green-200 rounded-xl">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-700">
-                  الفترة المحددة: {selectedPeriod.label}
-                </p>
-                <p className="text-sm text-gray-600">
-                  {selectedPeriod.days_count} يوم
-                </p>
-              </div>
-              <p className="text-lg font-bold text-primary">
-                {selectedPeriod.final_price} ر.س
-              </p>
+        {/* عرض تفاصيل الفترة المختارة */}
+        {selectedPeriod && (
+          <div className="bg-gray-50 p-3 rounded-lg text-sm">
+            <p className="font-medium text-gray-700">تفاصيل الفترة:</p>
+            <div className="grid grid-cols-2 gap-2 mt-2 text-gray-600">
+              <span>عدد الأيام: {selectedPeriod.days_count} يوم</span>
+              <span>السعر: {selectedPeriod.final_price} ر.س</span>
             </div>
           </div>
-        )} */}
+        )}
       </div>
     );
   };
@@ -625,210 +815,138 @@ export default function BookingForm({
           <CarDetails car={car} rentalType={rentalType} />
         </div>
 
-        <div className="lg:col-span-1">
-          <form onSubmit={handleSubmit} className="space-y-8">
-            <div className="bg-white space-y-4">
-              <div>
-                <label className="block text-sm font-bold text-gray-700 mb-2">
-                  الاسم *
-                </label>
-                <input
-                  type="text"
-                  value={bookingData.customerName}
-                  onChange={(e) => updateField("customerName", e.target.value)}
-                  className={`w-full px-4 py-3 border-2 rounded-xl focus:outline-none transition-colors ${
-                    errors.customerName
-                      ? "border-red-500"
-                      : "border-gray-200 focus:border-primary"
-                  }`}
-                  placeholder="الاسم"
-                  disabled={isAuthenticated}
-                />
-                {isAuthenticated && (
-                  <p className="text-xs text-green-600 mt-1">
-                    ✓ تم ملء البيانات تلقائياً من حسابك
-                  </p>
-                )}
-                {errors.customerName && (
-                  <p className="text-red-500 text-sm mt-1">
-                    {errors.customerName}
-                  </p>
-                )}
-              </div>
-
-              <div>
-                <label className="block text-sm font-bold text-gray-700 mb-2">
-                  رقم الجوال *
-                </label>
-                <PhoneInput
-                  key={phoneInputKey}
-                  value={phoneNumber}
-                  onChange={handlePhoneChange}
-                  required={true}
-                />
-                {isAuthenticated && (
-                  <p className="text-xs text-green-600 mt-1">
-                    ✓ تم ملء البيانات تلقائياً من حسابك
-                  </p>
-                )}
-                {errors.customerPhone && (
-                  <p className="text-red-500 text-sm mt-1">
-                    {errors.customerPhone}
-                  </p>
-                )}
-              </div>
-            </div>
-
-            <div className="bg-white space-y-4">
-              {bookingType === "daily" ? (
+        <div className="lg:col-span-1 ">
+          <form onSubmit={handleSubmit} className="space-y-8 mb-4">
+            {!isAuthenticated && (
+              <div className="bg-[#FCF9F466] grid grid-cols-1 lg:grid-cols-2 gap-2 border rounded-lg p-3 lg:p-5">
                 <div>
-                  <label className="block text-sm font-bold text-gray-700 mb-2">
-                    تاريخ الاستلام *
+                  <label className="block text-sm font-bold text-[#1F2937] mb-2">
+                    الاسم *
                   </label>
-                  <Popover
-                    open={isCalendarOpen}
-                    onOpenChange={setIsCalendarOpen}
-                  >
-                    <PopoverTrigger className="w-full">
-                      <div
-                        style={{ width: "100%" }}
-                        className={cn(
-                          "flex justify-between text-right font-normal px-4 py-3 h-auto border-2 rounded-xl",
-                          !bookingData.rentalDate && "text-muted-foreground",
-                          errors.rentalDate
-                            ? "border-red-500"
-                            : "border-gray-200 hover:border-primary/50"
-                        )}
-                      >
-                        <FaCalendarAlt className="ml-2 h-4 w-4 text-primary" />
-                        {bookingData.rentalDate ? (
-                          formatDate(new Date(bookingData.rentalDate))
-                        ) : (
-                          <span>اختر تاريخ الاستلام</span>
-                        )}
-                      </div>
-                    </PopoverTrigger>
-                    <PopoverContent
-                      className="w-auto p-0"
-                      align="start"
-                      sideOffset={4}
-                    >
-                      {isLoadingPeriods ? (
-                        <div className="p-4 text-center">
-                          <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin mx-auto"></div>
-                          <p className="text-sm text-gray-500 mt-2">
-                            جاري التحميل...
-                          </p>
-                        </div>
-                      ) : (
-                        <Calendar
-                          mode="single"
-                          selected={
-                            bookingData.rentalDate
-                              ? new Date(bookingData.rentalDate)
-                              : undefined
-                          }
-                          onSelect={(date: Date | undefined) => {
-                            if (date) {
-                              updateField(
-                                "rentalDate",
-                                format(date, "yyyy-MM-dd")
-                              );
-                              setIsCalendarOpen(false);
-                            }
-                          }}
-                          disabled={(date) => isDateDisabled(date)}
-                          className="rounded-xl"
-                          locale={ar}
-                        />
-                      )}
-                    </PopoverContent>
-                  </Popover>
-                  {errors.rentalDate && (
-                    <p className="text-red-500 text-sm mt-1">
-                      {errors.rentalDate}
-                    </p>
-                  )}
-                </div>
-              ) : (
-                <div>
-                  <label className="block text-sm font-bold text-gray-700 mb-2">
-                    اختر الشهر *
-                  </label>
-                  {renderMonthlySelector()}
-                  {errors.rentalDate && (
-                    <p className="text-red-500 text-sm mt-1">
-                      {errors.rentalDate}
-                    </p>
-                  )}
-                </div>
-              )}
-
-              {bookingType === "daily" && (
-                <div>
-                  <label className="block text-sm font-bold text-gray-700 mb-2">
-                    وقت الاستلام *
-                  </label>
-                  <Select
-                    value={bookingData.rentalTime || ""}
-                    onValueChange={(value) =>
-                      updateField("rentalTime", value || "")
+                  <input
+                    type="text"
+                    value={bookingData.customerName}
+                    onChange={(e) =>
+                      updateField("customerName", e.target.value)
                     }
-                  >
-                    <SelectTrigger
-                      className={cn(
-                        "w-full px-4 py-6 h-auto border-2 rounded-xl focus:ring-0 focus:ring-offset-0",
-                        errors.rentalTime
-                          ? "border-red-500"
-                          : "border-gray-200 focus:border-primary"
-                      )}
-                    >
-                      <SelectValue placeholder="اختر وقت الاستلام" />
-                    </SelectTrigger>
-                    <SelectContent className="max-h-80">
-                      {timeOptions.length > 0 ? (
-                        timeOptions.map((time) => (
-                          <SelectItem key={time} value={time}>
-                            {time}
-                          </SelectItem>
-                        ))
-                      ) : (
-                        <div className="p-4 text-center text-gray-500">
-                          لا توجد أوقات متاحة لهذا اليوم
-                        </div>
-                      )}
-                    </SelectContent>
-                  </Select>
-                  {errors.rentalTime && (
+                    className={`w-full px-4 py-3 border-2 rounded-xl focus:outline-none transition-colors ${
+                      errors.customerName
+                        ? "border-red-500"
+                        : "border-gray-200 focus:border-primary"
+                    }`}
+                    placeholder="الاسم"
+                    disabled={isAuthenticated}
+                  />
+                  {isAuthenticated && (
+                    <p className="text-xs text-green-600 mt-1">
+                      ✓ تم ملء البيانات تلقائياً من حسابك
+                    </p>
+                  )}
+                  {errors.customerName && (
                     <p className="text-red-500 text-sm mt-1">
-                      {errors.rentalTime}
+                      {errors.customerName}
                     </p>
                   )}
                 </div>
-              )}
 
+                <div>
+                  <label className="block text-sm font-bold text-[#1F2937] mb-2">
+                    رقم الجوال *
+                  </label>
+                  <PhoneInput
+                    key={phoneInputKey}
+                    value={phoneNumber}
+                    onChange={handlePhoneChange}
+                    required={true}
+                  />
+                  {isAuthenticated && (
+                    <p className="text-xs text-green-600 mt-1">
+                      ✓ تم ملء البيانات تلقائياً من حسابك
+                    </p>
+                  )}
+                  {errors.customerPhone && (
+                    <p className="text-red-500 text-sm mt-1">
+                      {errors.customerPhone}
+                    </p>
+                  )}
+                </div>
+              </div>
+            )}
+
+            <div className="bg-[#FCF9F466] space-y-4 border rounded-lg p-3 lg:p-5">
+              <div>
+                <label className="block font-semibold text-sm text-[#1F2937] mb-2">
+                  تاريخ ووقت التوصيل *
+                </label>
+
+                {bookingType === "daily" ? (
+                  <DateTimeSlider
+                    dates={availableDateList}
+                    times={availableTimeList}
+                    selectedDateIndex={selectedDateIndex}
+                    selectedTimeIndex={selectedTimeIndex}
+                    onDateSelect={(date, index) => {
+                      setSelectedDateIndex(index);
+                      handleDateSelect(date);
+                    }}
+                    onTimeSelect={(time, index) => {
+                      setSelectedTimeIndex(index);
+                      handleTimeSelect(time);
+                    }}
+                    formatTime={formatTimeTo12Hour}
+                    isLoading={isLoadingPeriods}
+                  />
+                ) : (
+                  <DateTimeSlider
+                    dates={monthlyDateList}
+                    times={monthlyTimeList}
+                    selectedDateIndex={selectedMonthlyDateIndex}
+                    selectedTimeIndex={selectedMonthlyTimeIndex}
+                    onDateSelect={(date, index) => {
+                      setSelectedMonthlyDateIndex(index);
+                      handleMonthlyDateSelect(date);
+                    }}
+                    onTimeSelect={(time, index) => {
+                      setSelectedMonthlyTimeIndex(index);
+                      updateField("rentalTime", time);
+                    }}
+                    formatTime={formatTimeTo12Hour}
+                    isLoading={isLoadingPeriods}
+                  />
+                )}
+
+                {errors.rentalDate && (
+                  <p className="text-red-500 text-sm mt-1">
+                    {errors.rentalDate}
+                  </p>
+                )}
+
+                {errors.rentalTime && (
+                  <p className="text-red-500 text-sm mt-1">
+                    {errors.rentalTime}
+                  </p>
+                )}
+              </div>
+
+              {/* عدد الأيام للحجز اليومي */}
               {bookingType === "daily" && (
                 <div>
-                  <label className="block text-sm font-bold text-gray-700 mb-2">
-                    عدد أيام الحجز *
-                  </label>
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center justify-between mb-2">
+                    <label className="block text-sm font-bold text-[#1F2937] mb-2">
+                      عدد أيام الحجز *
+                    </label>
                     <p className="text-gray-500 text-sm">
                       {bookingData.rentalDays || minimumDays} أيام
                     </p>
-                    <div className="flex items-center border-2 rounded-xl overflow-hidden w-fit border-gray-200 focus-within:border-primary transition-colors">
+                  </div>
+                  <div className="flex items-center gap-2 mx-auto">
+                    <div className="flex items-center border-2 mx-auto rounded-xl overflow-hidden w-[90%] border-gray-200 focus-within:border-primary transition-colors">
                       <button
                         type="button"
-                        onClick={decrementDays}
-                        className={cn(
-                          "w-12 h-12 flex items-center justify-center text-xl font-bold transition-colors",
-                          (bookingData.rentalDays || minimumDays) <=
-                            minimumDays
-                            ? "bg-gray-100 text-gray-300 cursor-not-allowed"
-                            : "bg-gray-100 text-gray-500 hover:bg-gray-200 hover:text-gray-700"
-                        )}
+                        onClick={incrementDays}
+                        className="w-12 lg:w-16 h-12 bg-primary border-2 border-[var(--primary)] text-gray-100 hover:bg-gray-800 flex items-center justify-center text-xl font-bold transition-colors"
                       >
-                        -
+                        +
                       </button>
 
                       <input
@@ -843,22 +961,87 @@ export default function BookingForm({
                           ) {
                             updateField("rentalDays", minimumDays);
                             toast.error(
-                              `الحد الأدنى للحجز هو ${minimumDays} أيام`
+                              `الحد الأدنى للحجز هو ${minimumDays} أيام`,
                             );
                           }
                         }}
                         className={cn(
-                          "w-16 h-12 px-2 text-center text-gray-800 text-lg font-bold border-0 focus:outline-none focus:ring-0",
-                          errors.rentalDays && "border-red-500"
+                          "w-full h-12 px-2 text-center text-gray-800 text-lg font-bold border-0 focus:outline-none focus:ring-0",
+                          errors.rentalDays && "border-red-500",
                         )}
                       />
 
                       <button
                         type="button"
-                        onClick={incrementDays}
-                        className="w-12 h-12 bg-gray-100 text-gray-500 hover:bg-gray-200 hover:text-gray-700 flex items-center justify-center text-xl font-bold transition-colors"
+                        onClick={decrementDays}
+                        className={cn(
+                          "w-12 lg:w-16 h-12 flex items-center justify-center text-xl font-bold transition-colors",
+                          (bookingData.rentalDays || minimumDays) <= minimumDays
+                            ? "bg-gray-100 text-gray-300 cursor-not-allowed"
+                            : "bg-gray-100 text-gray-500 hover:bg-gray-200 hover:text-[#1F2937]",
+                        )}
+                      >
+                        -
+                      </button>
+                    </div>
+                  </div>
+                  {errors.rentalDays && (
+                    <p className="text-red-500 text-sm mt-2">
+                      {errors.rentalDays}
+                    </p>
+                  )}
+                </div>
+              )}
+
+              {/* ✅ عدد الأشهر للحجز الشهري */}
+              {bookingType === "monthly" && (
+                <div>
+                  <div className="flex items-center justify-between mb-2">
+                    <label className="block text-sm font-bold text-[#1F2937] mb-2">
+                      عدد أشهر الحجز *
+                    </label>
+                    <p className="text-gray-500 text-sm">
+                      {rentalMonths} {rentalMonths === 1 ? "شهر" : "أشهر"}
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2 mx-auto">
+                    <div className="flex items-center border-2 mx-auto rounded-xl overflow-hidden w-[90%] border-gray-200 focus-within:border-primary transition-colors">
+                      <button
+                        type="button"
+                        onClick={incrementMonths}
+                        className="w-12 lg:w-16 h-12 bg-primary border-2 border-[var(--primary)] text-gray-100 hover:bg-gray-800 flex items-center justify-center text-xl font-bold transition-colors"
                       >
                         +
+                      </button>
+
+                      <input
+                        type="number"
+                        min={1}
+                        value={rentalMonths}
+                        onChange={handleMonthsChange}
+                        onBlur={() => {
+                          if (!rentalMonths || rentalMonths < 1) {
+                            setRentalMonths(1);
+                            toast.error("الحد الأدنى للحجز هو شهر واحد");
+                          }
+                        }}
+                        className={cn(
+                          "w-full h-12 px-2 text-center text-gray-800 text-lg font-bold border-0 focus:outline-none focus:ring-0",
+                          errors.rentalDays && "border-red-500",
+                        )}
+                      />
+
+                      <button
+                        type="button"
+                        onClick={decrementMonths}
+                        className={cn(
+                          "w-12 lg:w-16 h-12 flex items-center justify-center text-xl font-bold transition-colors",
+                          (rentalMonths || 1) <= 1
+                            ? "bg-gray-100 text-gray-300 cursor-not-allowed"
+                            : "bg-gray-100 text-gray-500 hover:bg-gray-200 hover:text-[#1F2937]",
+                        )}
+                      >
+                        -
                       </button>
                     </div>
                   </div>
@@ -871,11 +1054,19 @@ export default function BookingForm({
               )}
             </div>
 
-            <div className="bg-white space-y-4">
+            <div className="bg-[#FCF9F466] border rounded-lg p-3 lg:p-5 space-y-4">
               <div className="flex flex-col gap-2">
-                <h2 className="text-sm lg:text-base font-bold text-gray-800">
+                <h2 className="text-sm lg:text-base font-semibold text-gray-800">
                   موقع الاستلام *
                 </h2>
+                <Image
+                  onClick={() => setIsMapOpen(true)}
+                  src="/images/map.png"
+                  alt="map"
+                  className=" cursor-pointer w-full h-13.5 object-cover rounded-lg mb-2 lg:mb-3"
+                  width={600}
+                  height={300}
+                />
                 <button
                   type="button"
                   onClick={() => setIsMapOpen(true)}
@@ -899,15 +1090,14 @@ export default function BookingForm({
               )}
             </div>
           </form>
-        </div>
-
-        <div className="lg:col-span-1 space-y-6">
           <BookingServices
             services={availableServices}
             selectedServices={bookingData.selectedServices}
             onToggle={toggleService}
           />
+        </div>
 
+        <div className="lg:col-span-1 space-y-6">
           <BookingSummary
             car={car}
             rentalDays={bookingData.rentalDays}
@@ -930,10 +1120,7 @@ export default function BookingForm({
             type="submit"
             onClick={handleSubmit}
             disabled={
-              isSubmitting || 
-              isCalculating || 
-              isRedirecting || 
-              isOTPLoading
+              isSubmitting || isCalculating || isRedirecting || isOTPLoading
             }
             className="w-full bg-primary hover:bg-primary-dark text-white py-4 rounded-xl text-lg font-bold transition-all duration-300 hover:scale-[1.02] hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
           >
@@ -970,7 +1157,10 @@ export default function BookingForm({
         }}
         onVerify={handleVerifyOTPFromPopup}
         isLoading={isOTPLoading}
-        phoneNumber={formatPhoneNumber(bookingData.customerPhone || '', countryCode)}
+        phoneNumber={formatPhoneNumber(
+          bookingData.customerPhone || "",
+          countryCode,
+        )}
         onResend={handleResendOTP}
       />
     </>

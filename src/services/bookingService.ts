@@ -34,6 +34,7 @@ export class BookingService {
     paymentUrl?: string;
     uuid?: string;
     zip?: string;
+     error?: any; 
   }> {
     try {
       const paymentMethodId = parseInt(data.selectedPaymentMethod) || 0;
@@ -107,6 +108,7 @@ export class BookingService {
       return {
         success: false,
         message: error.message || 'حدث خطأ أثناء الحجز',
+         error: error,
       };
     }
   }

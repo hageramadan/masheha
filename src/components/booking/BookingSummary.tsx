@@ -4,6 +4,9 @@
 
 import { Car } from "@/src/types/booking";
 import { formatCurrency } from "@/src/utils/bookingUtils";
+import { FaPercent } from "react-icons/fa";
+import { FaMoneyBills } from "react-icons/fa6";
+import { LiaMoneyBillWaveSolid } from "react-icons/lia";
 
 interface BookingSummaryProps {
   car: Car;
@@ -20,7 +23,7 @@ interface BookingSummaryProps {
   };
   deliveryFee?: number;
   showPriceBreakdown?: boolean;
-  isCalculating?: boolean; 
+  isCalculating?: boolean;
 }
 
 export default function BookingSummary({
@@ -29,18 +32,16 @@ export default function BookingSummary({
   totals,
   deliveryFee = 0,
   showPriceBreakdown = true,
-  isCalculating = false, 
+  isCalculating = false,
 }: BookingSummaryProps) {
-  
   if (isCalculating) {
     return (
-      <div className="bg-white border rounded-xl p-6">
+      <div className="bg-[#FCF9F466] border rounded-lg p-3 lg:p-5">
         <h2 className="text-base lg:text-lg font-bold text-primary mb-4">
           ملخص الطلب
         </h2>
         <div className="flex items-center justify-center py-8">
           <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin"></div>
-        
         </div>
       </div>
     );
@@ -52,16 +53,23 @@ export default function BookingSummary({
     totals.total || carTotal + totals.servicesTotal + deliveryFee + totals.tax;
 
   return (
-    <div className="bg-white border rounded-xl p-6">
+    <div className="bg-[#FCF9F466] border rounded-lg p-3 lg:p-5">
       <h2 className="text-base lg:text-lg font-bold text-primary mb-4">
         ملخص الطلب
       </h2>
 
-      <div className="flex justify-between items-center w-full pb-3 border-b border-gray-200">
-        <p className="text-gray-500">
+      <div className="flex justify-between items-center w-full pb-1">
+        {/* <p className="text-gray-600">
           {car.name} {car.year}
-        </p>
-        <p className="text-base text-primary">
+        </p> */}
+        <div className="flex items-center gap-1">
+          <div className="p-1 rounded-full">
+            <FaMoneyBills className="w-5 h-5 text-[#012738] " />
+          </div>
+
+          <span className="text-gray-600">السعر الأساسي</span>
+        </div>
+        <p className="text-[#717182] text-sm font-bold">
           {formatCurrency(totals.basePrice || carTotal)}
         </p>
       </div>
@@ -70,18 +78,18 @@ export default function BookingSummary({
         {showPriceBreakdown && (
           <>
             {totals.discount > 0 && (
-              <div className="flex justify-between text-sm pb-3 border-b border-gray-200">
+              <div className="flex justify-between text-sm pb-1 ">
                 <span className="text-gray-500">الخصم</span>
-                <span className="text-base text-red-500">
+                <span className="text-[#717182] text-sm font-bold">
                   -{formatCurrency(totals.discount)}
                 </span>
               </div>
             )}
 
             {totals.couponDiscount > 0 && (
-              <div className="flex justify-between text-sm pb-3 border-b border-gray-200">
+              <div className="flex justify-between text-sm pb-1 ">
                 <span className="text-gray-500">خصم الكوبون</span>
-                <span className="text-base text-red-500">
+                <span className="text-[#717182] text-sm font-bold">
                   -{formatCurrency(totals.couponDiscount)}
                 </span>
               </div>
@@ -90,16 +98,23 @@ export default function BookingSummary({
         )}
 
         {totals.servicesTotal > 0 && (
-          <div className="flex justify-between text-sm pb-3 border-b border-gray-200">
-            <span className="text-gray-500">خدمات إضافية</span>
-            <span className="text-base text-primary">
+          <div className="flex justify-between text-sm pb-1 ">
+            <div className="flex items-center gap-1">
+              <div className="p-1 rounded-full">
+                <LiaMoneyBillWaveSolid className="w-5 h-5 text-[#012738] " />
+              </div>
+
+              <span className="text-gray-600">رسوم الخدمات الاضافية</span>
+            </div>
+            {/* <span className="text-gray-500">خدمات إضافية</span> */}
+            <p className="text-[#717182] text-sm font-bold">
               {formatCurrency(totals.servicesTotal)}
-            </span>
+            </p>
           </div>
         )}
 
         {/* {deliveryFee > 0 && (
-          <div className="flex justify-between text-sm pb-3 border-b border-gray-200">
+          <div className="flex justify-between text-sm pb-1 border-b border-gray-200">
             <span className="text-gray-500">رسوم التوصيل</span>
             <span className="text-base text-primary">
               {formatCurrency(deliveryFee)}
@@ -108,19 +123,28 @@ export default function BookingSummary({
         )} */}
 
         {totals.tax > 0 && (
-          <div className="flex justify-between text-sm pb-3 border-b border-gray-200">
-            <span className="text-gray-500">الضريبة</span>
-            <span className="text-base text-primary">
+          <div className="flex justify-between text-sm pb-2 border-b border-gray-200">
+            <div className="flex items-center gap-1">
+              <div className="p-1 rounded-full">
+                <FaPercent className="w-4 h-4 text-[#012738] " />
+              </div>
+
+              <span className="text-gray-600">ضريبة القيمة المضافة</span>
+            </div>
+            {/* <span className="text-gray-500">الضريبة</span> */}
+            <span className="text-[#717182] text-sm font-bold">
               {formatCurrency(totals.tax)}
             </span>
           </div>
         )}
       </div>
 
-      <div className="space-y-2 pt-4">
+      <div className="space-y-2 pt-2">
         <div className="flex justify-between text-lg font-bold">
-          <span>الإجمالي</span>
-          <span className="text-primary">{formatCurrency(finalTotal)}</span>
+          <span className="text-[#0079AB] text-base font-bold">الإجمالي</span>
+          <span className="text-[#0079AB] text-base font-bold">
+            {formatCurrency(finalTotal)}
+          </span>
         </div>
       </div>
     </div>

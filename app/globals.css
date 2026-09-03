@@ -88,7 +88,42 @@ h1, h2, h3, h4, h5, h6 {
   direction: rtl;
   display: none;
 }
+/* src/app/globals.css */
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+/* src/app/globals.css */
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
 
+/* تأثيرات السلايدر العمودي */
+.date-item, .time-item {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  will-change: transform, opacity;
+}
+
+.date-item:hover, .time-item:hover {
+  transform: scale(1.05) !important;
+  opacity: 0.8 !important;
+}
+
+.date-item:active, .time-item:active {
+  transform: scale(0.95) !important;
+}
+
+/* تأثير التمرير السلس */
+.smooth-scroll {
+  scroll-behavior: smooth;
+}
 .dark {
   --background: oklch(0.145 0 0);
   --foreground: oklch(0.985 0 0);
