@@ -4,7 +4,8 @@ import { useState, useCallback } from "react";
 import LoadingScreen from "@/src/components/common/LoadingScreen";
 import FeaturedCars from "@/src/components/home/FeaturedCars";
 import HeroSliderSwiper from "@/src/components/home/HeroSliderSwiper";
-
+import DownloadApp from "@/src/components/common/DownloadApp";
+import DownloadSection from "@/src/components/home/downloadSection"
 export default function Home() {
   const [isLoading, setIsLoading] = useState(true);
 
@@ -28,6 +29,7 @@ export default function Home() {
           <HeroSliderSwiper />
 
           <FeaturedCars onLoad={handleFeaturedCarsLoad} />
+          <DownloadSection />
         </div>
       </div>
     </>

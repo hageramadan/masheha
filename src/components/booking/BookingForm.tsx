@@ -26,7 +26,7 @@ import {
 } from "@/src/ui/select";
 import { cn } from "@/src/lib/utils";
 import { FaCalendarAlt } from "react-icons/fa";
-
+import DownloadSection2 from "../home/downloadSection2";
 import GoogleMapPicker from "./GoogleMapPicker";
 import { CarService } from "@/src/services/carService";
 import { AvailableDate, AvailableHour } from "@/src/types/api";
@@ -49,6 +49,7 @@ import DateSlider from "./DateSlider";
 import TimeSlider from "./TimeSlider";
 import Image from "next/image";
 import DateTimeSlider from "./DateTimeSlider";
+import Download3 from "../home/download3";
 
 interface BookingFormProps {
   carId: string;
@@ -816,6 +817,7 @@ export default function BookingForm({
         </div>
 
         <div className="lg:col-span-1 ">
+          <DownloadSection2/>
           <form onSubmit={handleSubmit} className="space-y-8 mb-4">
             {!isAuthenticated && (
               <div className="bg-[#FCF9F466] grid grid-cols-1 lg:grid-cols-2 gap-2 border rounded-lg p-3 lg:p-5">
@@ -1138,6 +1140,7 @@ export default function BookingForm({
               `احجز الآن (${rentalType})`
             )}
           </button>
+          <Download3/>
         </div>
 
         <GoogleMapPicker
