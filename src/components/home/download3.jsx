@@ -3,7 +3,7 @@ import DownloadApp from '@/src/components/common/DownloadApp';
 export default function DownloadSection() {
   return (
     <section 
-      className="container py-4 relative rounded-2xl lg:rounded-2xl overflow-hidden mx-auto w-[95%] lg:w-full my-0 flex items-center"
+      className="container py-4 relative rounded-2xl lg:rounded-2xl overflow-hidden mx-auto w-[100%] lg:w-full my-0 flex items-center"
       style={{
         background: 'linear-gradient(135deg, #212121 0%, #0079AB 100%)',
       }}
