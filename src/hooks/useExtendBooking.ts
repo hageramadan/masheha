@@ -350,7 +350,7 @@ export const useExtendBooking = ({ bookingId, carName, onSuccess }: UseExtendBoo
               booking_id: bookingId,
               extended: true,
             },
-            token,
+            token || undefined,
           );
           
           return true;
@@ -366,7 +366,7 @@ export const useExtendBooking = ({ bookingId, carName, onSuccess }: UseExtendBoo
             extension_days: days,
             booking_id: bookingId,
           },
-          token,
+          token || undefined,
         );
         localStorage.removeItem('pending_extension');
         toast.error("❌ لم يتم الدفع، يرجى المحاولة مرة أخرى");
