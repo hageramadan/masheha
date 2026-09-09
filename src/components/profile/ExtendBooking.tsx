@@ -8,6 +8,8 @@ import { cn } from "@/src/lib/utils";
 import { RiArrowRightSLine } from "react-icons/ri";
 import toast from "react-hot-toast";
 import { getAvailableExtensionDays } from "@/src/services/bookingApiService";
+import PaymentMethodsList from "@/src/components/common/PaymentMethodsList";
+import { useExtendBooking } from "@/src/hooks/useExtendBooking";
 
 interface ExtendBookingProps {
   bookingId: number;
@@ -37,15 +39,15 @@ function formatDate(dateString: string) {
 
 export default function ExtendBooking({
   bookingId,
-
   returnDate,
-
   maxExtensionDays,
+  carName,
   onBack,
 }: ExtendBookingProps) {
   const [days, setDays] = useState(1);
-  const [isSubmitting, setIsSubmitting] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<string | null>(null);
+  const [paymentError, setPaymentError] = useState<string>("");
   const [extensionData, setExtensionData] = useState<{
     requested_days: number;
     available_days: number;
@@ -60,6 +62,45 @@ export default function ExtendBooking({
       end_date: string;
     }>;
   } | null>(null);
+
+  // استخدام Hook التمديد
+  const {
+    handleExtendBooking,
+    handlePaymentCallback,
+    isSubmitting,
+    isRedirecting,
+  } = useExtendBooking({
+    bookingId,
+    carName,
+    onSuccess: onBack,
+  });
+
+  // التحقق من وجود طلب تمديد معلق عند تحميل المكون (للعودة من بوابة الدفع)
+  useEffect(() => {
+    const checkPendingExtension = async () => {
+      const pendingDataStr = localStorage.getItem('pending_extension');
+      if (pendingDataStr) {
+        try {
+          const pendingData = JSON.parse(pendingDataStr);
+          // إذا كان الطلب لنفس bookingId
+          if (pendingData.bookingId === bookingId) {
+            // محاولة استرجاع uuid من URL
+            const urlParams = new URLSearchParams(window.location.search);
+            const uuid = urlParams.get('uuid');
+            const paymentStatus = urlParams.get('status') as 'success' | 'failed' || 'success';
+            
+            if (uuid) {
+              await handlePaymentCallback(uuid, paymentStatus);
+            }
+          }
+        } catch (error) {
+          console.error("Error checking pending extension:", error);
+        }
+      }
+    };
+
+    checkPendingExtension();
+  }, [bookingId, handlePaymentCallback]);
 
   useEffect(() => {
     async function fetchExtensionData() {
@@ -108,31 +149,51 @@ export default function ExtendBooking({
     }
   };
 
-  const handleSubmit = async () => {
-    if (days < 1) {
-      toast.error("الرجاء إدخال عدد أيام صحيح");
-      return;
-    }
-
-    setIsSubmitting(true);
-    try {
-      // const result = await extendBooking(bookingId, days);
-
-      toast.success(`تم تمديد الحجز بنجاح لمدة ${days} يوم`, {
-        duration: 3000,
-        position: "top-center",
-      });
-
-      setTimeout(() => {
-        onBack();
-      }, 1500);
-    } catch (error: any) {
-      console.error("Error extending booking:", error);
-      toast.error(error.message || "حدث خطأ أثناء تمديد الحجز");
-    } finally {
-      setIsSubmitting(false);
-    }
+  const handlePaymentSelect = (methodId: string) => {
+    setSelectedPaymentMethod(methodId);
+    setPaymentError("");
   };
+
+
+const handleSubmit = async () => {
+  
+  if (days < 1) {
+    toast.error("الرجاء إدخال عدد أيام صحيح");
+    return;
+  }
+
+
+  if (!selectedPaymentMethod) {
+    setPaymentError("الرجاء اختيار طريقة الدفع");
+    toast.error("الرجاء اختيار طريقة الدفع");
+    return;
+  }
+
+  
+  if (!extensionData) {
+    toast.error("حدث خطأ في حساب السعر");
+    return;
+  }
+
+  const totalAmount = extensionData.extension_price + parseFloat(extensionData.tax_amount);
+  
+
+  const priceData = {
+    extension_price: extensionData.extension_price,
+    tax_amount: extensionData.tax_amount,
+    total_amount: totalAmount,
+    daily_price: extensionData.daily_price,
+    days: days,
+  };
+
+  // ✅ تنفيذ التمديد مع الدفع (سيتم إرسال payment_method_id و uuid داخل الدالة)
+  await handleExtendBooking(
+    days,
+    selectedPaymentMethod, // سيتم تحويله إلى payment_method_id
+    totalAmount,
+    priceData,
+  );
+};
 
   const newReturnDate = extensionData?.new_end_date
     ? formatDate(extensionData.new_end_date)
@@ -143,12 +204,14 @@ export default function ExtendBooking({
       <button
         onClick={onBack}
         className="flex items-center text-[#191C1F] hover:text-[#034f72] transition-colors"
+        disabled={isSubmitting || isRedirecting}
       >
         <RiArrowRightSLine className="text-[30px]" />
         <span className="text-sm lg:text-lg font-bold">تمديد الحجز</span>
       </button>
 
       <div className="bg-white rounded-2xl shadow-xl p-3 lg:p-6 space-y-6">
+        {/* اختيار عدد الأيام */}
         <div className="space-y-2">
           <label className="block text-sm font-bold text-gray-700 mb-2">
             عدد أيام التمديد
@@ -159,10 +222,10 @@ export default function ExtendBooking({
               <button
                 type="button"
                 onClick={decrementDays}
-                disabled={days <= 1 || isSubmitting}
+                disabled={days <= 1 || isSubmitting || isRedirecting}
                 className={cn(
                   "w-12 h-12 flex items-center justify-center text-xl font-bold transition-colors",
-                  days <= 1 || isSubmitting
+                  days <= 1 || isSubmitting || isRedirecting
                     ? "bg-gray-100 text-gray-300 cursor-not-allowed"
                     : "bg-gray-100 text-gray-500 hover:bg-gray-200 hover:text-gray-700",
                 )}
@@ -176,17 +239,17 @@ export default function ExtendBooking({
                 max={maxExtensionDays}
                 value={days}
                 onChange={handleDaysChange}
-                disabled={isSubmitting}
+                disabled={isSubmitting || isRedirecting}
                 className="w-16 h-12 px-2 text-center text-gray-800 text-lg font-bold border-0 focus:outline-none focus:ring-0"
               />
 
               <button
                 type="button"
                 onClick={incrementDays}
-                disabled={days >= maxExtensionDays || isSubmitting}
+                disabled={days >= maxExtensionDays || isSubmitting || isRedirecting}
                 className={cn(
                   "w-12 h-12 flex items-center justify-center text-xl font-bold transition-colors",
-                  days >= maxExtensionDays || isSubmitting
+                  days >= maxExtensionDays || isSubmitting || isRedirecting
                     ? "bg-gray-100 text-gray-300 cursor-not-allowed"
                     : "bg-gray-100 text-gray-500 hover:bg-gray-200 hover:text-gray-700",
                 )}
@@ -207,6 +270,7 @@ export default function ExtendBooking({
           </div>
         )}
 
+        {/* تفاصيل التمديد */}
         {!isLoading && extensionData && (
           <div className="space-y-4 pt-4 border-t border-gray-100">
             <div className="flex items-center justify-between gap-3">
@@ -225,6 +289,17 @@ export default function ExtendBooking({
           </div>
         )}
 
+        {/* طرق الدفع */}
+        <div className="pt-4 border-t border-gray-100">
+          <PaymentMethodsList
+            selectedMethod={selectedPaymentMethod}
+            onSelect={handlePaymentSelect}
+            error={paymentError}
+            rentalType="يومي"
+          />
+        </div>
+
+        {/* تفاصيل السعر */}
         {!isLoading && extensionData && (
           <div className="bg-gray-50 rounded-xl p-4 space-y-2">
             <div className="flex justify-between text-sm">
@@ -252,16 +327,17 @@ export default function ExtendBooking({
           </div>
         )}
 
+        {/* الأزرار */}
         <div className="flex flex-col sm:flex-row gap-3 pt-2">
           <button
             onClick={handleSubmit}
-            disabled={isSubmitting || isLoading || !extensionData}
+            disabled={isSubmitting || isRedirecting || isLoading || !extensionData}
             className="flex-1 flex items-center justify-center gap-2 px-6 py-3 bg-[#012738] text-white rounded-xl hover:bg-[#012738]/90 transition-all hover:scale-[1.02] disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {isSubmitting ? (
+            {isSubmitting || isRedirecting ? (
               <>
                 <span className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
-                جاري التمديد...
+                {isRedirecting ? 'جاري التوجيه للدفع...' : 'جاري التمديد...'}
               </>
             ) : (
               <span className="font-medium">تأكيد التمديد</span>
@@ -269,12 +345,20 @@ export default function ExtendBooking({
           </button>
           <button
             onClick={onBack}
-            disabled={isSubmitting}
+            disabled={isSubmitting || isRedirecting}
             className="flex-1 px-6 py-3 bg-gray-100 text-gray-600 rounded-xl hover:bg-gray-200 transition-colors disabled:opacity-50"
           >
             إلغاء
           </button>
         </div>
+
+        {/* رسالة التوجيه للدفع */}
+        {isRedirecting && (
+          <div className="text-center text-sm text-gray-600">
+            <p>جاري توجيهك إلى بوابة الدفع...</p>
+            <p className="text-xs text-gray-400 mt-1">يرجى الانتظار</p>
+          </div>
+        )}
       </div>
     </div>
   );

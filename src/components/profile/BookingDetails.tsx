@@ -631,7 +631,7 @@ export default function BookingDetails({
           )}
         </div>
 
-        {/* زر تمديد الحجز - يظهر فقط عندما تكون حالة الدفع مدفوع */}
+     
         {!isCheckingExtension && isPaymentPaid && canExtend && (
           <div
             className={cn(
@@ -672,8 +672,8 @@ export default function BookingDetails({
             )}
           </div>
         )}
-
-        {/* رسالة عدم إمكانية التمديد - تظهر فقط عندما تكون حالة الدفع مدفوع */}
+  
+       
         {!isCheckingExtension &&
           isPaymentPaid &&
           !canExtend &&
