@@ -133,6 +133,9 @@ export default function BookingForm({
   // حالة تسجيل المستخدم
   const [isUserRegistered, setIsUserRegistered] = useState(false);
 
+  // ✅ حالة جديدة لتتبع ما إذا تم التحقق من الهوية بالكامل
+  const [isIdentityVerified, setIsIdentityVerified] = useState(false);
+
   // حالة البوب اب
   const [isOTPPopupOpen, setIsOTPPopupOpen] = useState(false);
 
@@ -241,8 +244,9 @@ export default function BookingForm({
       if (user.country_code) {
         setCountryCode(user.country_code);
       }
-      // إذا كان مسجل دخول، اعتبره مسجل بالفعل
+      // إذا كان مسجل دخول، اعتبره مسجل بالفعل ومتحقق من هويته
       setIsUserRegistered(true);
+      setIsIdentityVerified(true); // ✅ المستخدم المسجل دخول متحقق تلقائياً
     }
   }, [isAuthenticated, user, updateField]);
 
@@ -255,6 +259,7 @@ export default function BookingForm({
     setPhoneInputKey((prev) => prev + 1);
     setOtpCode("");
     setIsPhoneVerified(false);
+    setIsIdentityVerified(false); // ✅ إعادة تعيين حالة التحقق
     setShowOTPInput(false);
     setIsUserRegistered(false);
     setIsOTPPopupOpen(false);
@@ -433,6 +438,10 @@ export default function BookingForm({
     setPhoneNumber(phone);
     setCountryCode(code);
     updateField("customerPhone", phone);
+    // ✅ إعادة تعيين حالة التحقق عند تغيير رقم الجوال
+    setIsIdentityVerified(false);
+    setIsPhoneVerified(false);
+    setIsUserRegistered(false);
   };
 
   // دالة تنسيق رقم الهاتف لصيغة Firebase
@@ -444,14 +453,21 @@ export default function BookingForm({
     return `${countryCode}${phoneWithoutZero}`;
   };
 
-  // 1️⃣ أولاً: تسجيل المستخدم في Backend
+  // 1️⃣ تسجيل المستخدم في Backend
   const handleRegisterUser = async () => {
     try {
-      // التحقق من صحة النموذج قبل التسجيل
-      if (!validateForm()) return false;
-
       const name = bookingData.customerName?.trim();
       const phone = bookingData.customerPhone?.trim();
+
+      // ✅ التحقق من الاسم ورقم الجوال فقط (وليس النموذج كامل)
+      if (!name) {
+        toast.error("يرجى إدخال الاسم");
+        return false;
+      }
+      if (!phone) {
+        toast.error("يرجى إدخال رقم الجوال");
+        return false;
+      }
 
       // لو مسجل دخول بالفعل، مش محتاج تسجيل
       if (isAuthenticated) {
@@ -503,9 +519,11 @@ export default function BookingForm({
     const user = await verifyOTP(code);
     if (user) {
       setIsPhoneVerified(true);
+      setIsIdentityVerified(true); // ✅ تم التحقق من الهوية بالكامل
       setShowOTPInput(false);
       setIsOTPPopupOpen(false);
-      await submit();
+      toast.success("✓ تم التحقق من هويتك بنجاح");
+      // ⚠️ لا ننفذ submit هنا - المستخدم يضغط زر الحجز بنفسه
       return true;
     }
     return false;
@@ -526,39 +544,64 @@ export default function BookingForm({
     }
   };
 
-  // معالج الضغط على زر الحجز
+  // ✅ دالة التحقق من الهوية (Register + OTP) - للزر الأول
+  const handleVerifyIdentity = async () => {
+    // 1️⃣ التحقق من الاسم ورقم الجوال فقط
+    const name = bookingData.customerName?.trim();
+    const phone = bookingData.customerPhone?.trim();
+
+    if (!name) {
+      toast.error("يرجى إدخال الاسم");
+      return;
+    }
+    if (!phone) {
+      toast.error("يرجى إدخال رقم الجوال");
+      return;
+    }
+
+    // 2️⃣ لو الهوية متحقق منها بالفعل
+    if (isIdentityVerified) {
+      toast.success("✓ تم التحقق من هويتك بالفعل");
+      return;
+    }
+
+    // 3️⃣ تسجيل المستخدم في Backend (لو مش مسجل)
+    if (!isUserRegistered && !isAuthenticated) {
+      const registered = await handleRegisterUser();
+      if (!registered) {
+        toast.error("فشل تسجيل المستخدم");
+        return;
+      }
+    }
+
+    // 4️⃣ إرسال OTP وفتح البوب اب
+    if (!isOTPSent) {
+      const sent = await handleSendOTP();
+      if (!sent) {
+        toast.error("فشل إرسال رمز التحقق");
+        return;
+      }
+    } else {
+      // لو OTP مرسل بالفعل، افتح البوب اب
+      setIsOTPPopupOpen(true);
+    }
+  };
+
+  // معالج الضغط على زر الحجز - للزر الثاني
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    // التحقق من صحة النموذج بالكامل قبل أي شيء
+    // 1️⃣ التحقق من أن الهوية تم التحقق منها أولاً
+    if (!isIdentityVerified && !isAuthenticated) {
+      toast.error("يرجى التحقق من هويتك أولاً");
+      return;
+    }
+
+    // 2️⃣ التحقق من صحة النموذج بالكامل
     if (!validateForm()) return;
 
-    // 🎯 الترتيب:
-
-    // 1️⃣ تسجيل المستخدم في Backend (أولاً)
-    if (!isUserRegistered) {
-      const registered = await handleRegisterUser();
-      if (!registered) return;
-      // بعد التسجيل، نكمل لإرسال OTP
-    }
-
-    // 2️⃣ لو OTP متحقق منه → ننفذ الحجز
-    if (isPhoneVerified) {
-      await submit();
-      return;
-    }
-
-    // 3️⃣ لو OTP مش مرسل → نرسله ونفتح البوب اب
-    if (!isOTPSent) {
-      await handleSendOTP();
-      return;
-    }
-
-    // 4️⃣ لو OTP مرسل بس لسه متحققش → نفتح البوب اب
-    if (isOTPSent && !isPhoneVerified) {
-      setIsOTPPopupOpen(true);
-      toast.error("📱 أدخل رمز التحقق");
-    }
+    // 3️⃣ تنفيذ الحجز والدفع
+    await submit();
   };
 
   const handleLocationSelect = async (
@@ -820,59 +863,88 @@ export default function BookingForm({
           <DownloadSection2/>
           <form onSubmit={handleSubmit} className="space-y-8 mb-4">
             {!isAuthenticated && (
-              <div className="bg-[#FCF9F466] grid grid-cols-1 lg:grid-cols-2 gap-2 border rounded-lg p-3 lg:p-5">
-                <div>
-                  <label className="block text-sm font-bold text-[#1F2937] mb-2">
-                    الاسم *
-                  </label>
-                  <input
-                    type="text"
-                    value={bookingData.customerName}
-                    onChange={(e) =>
-                      updateField("customerName", e.target.value)
-                    }
-                    className={`w-full px-4 py-3 border-2 rounded-xl focus:outline-none transition-colors ${
-                      errors.customerName
-                        ? "border-red-500"
-                        : "border-gray-200 focus:border-primary"
-                    }`}
-                    placeholder="الاسم"
-                    disabled={isAuthenticated}
-                  />
-                  {isAuthenticated && (
-                    <p className="text-xs text-green-600 mt-1">
-                      ✓ تم ملء البيانات تلقائياً من حسابك
-                    </p>
-                  )}
-                  {errors.customerName && (
-                    <p className="text-red-500 text-sm mt-1">
-                      {errors.customerName}
-                    </p>
-                  )}
+              <>
+                <div className="bg-[#FCF9F466] grid grid-cols-1 lg:grid-cols-2 gap-2 border rounded-lg p-3 lg:p-5">
+                  <div>
+                    <label className="block text-sm font-bold text-[#1F2937] mb-2">
+                      الاسم *
+                    </label>
+                    <input
+                      type="text"
+                      value={bookingData.customerName}
+                      onChange={(e) =>
+                        updateField("customerName", e.target.value)
+                      }
+                      className={`w-full px-4 py-3 border-2 rounded-xl focus:outline-none transition-colors ${
+                        errors.customerName
+                          ? "border-red-500"
+                          : "border-gray-200 focus:border-primary"
+                      } ${isIdentityVerified ? "bg-gray-100 cursor-not-allowed" : ""}`}
+                      placeholder="الاسم"
+                      disabled={isIdentityVerified}
+                    />
+                    {isIdentityVerified && (
+                      <p className="text-xs text-green-600 mt-1">
+                        ✓ تم التحقق من الهوية
+                      </p>
+                    )}
+                    {errors.customerName && (
+                      <p className="text-red-500 text-sm mt-1">
+                        {errors.customerName}
+                      </p>
+                    )}
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-bold text-[#1F2937] mb-2">
+                      رقم الجوال *
+                    </label>
+                    <PhoneInput
+                      key={phoneInputKey}
+                      value={phoneNumber}
+                      onChange={handlePhoneChange}
+                      required={true}
+                    />
+                    {isIdentityVerified && (
+                      <p className="text-xs text-green-600 mt-1">
+                        ✓ تم التحقق من الهوية
+                      </p>
+                    )}
+                    {errors.customerPhone && (
+                      <p className="text-red-500 text-sm mt-1">
+                        {errors.customerPhone}
+                      </p>
+                    )}
+                  </div>
                 </div>
 
-                <div>
-                  <label className="block text-sm font-bold text-[#1F2937] mb-2">
-                    رقم الجوال *
-                  </label>
-                  <PhoneInput
-                    key={phoneInputKey}
-                    value={phoneNumber}
-                    onChange={handlePhoneChange}
-                    required={true}
-                  />
-                  {isAuthenticated && (
-                    <p className="text-xs text-green-600 mt-1">
-                      ✓ تم ملء البيانات تلقائياً من حسابك
-                    </p>
+                {/* ✅ زر التحقق من الهوية (Register + OTP) */}
+                <button
+                  type="button"
+                  onClick={handleVerifyIdentity}
+                  disabled={isIdentityVerified || isOTPLoading}
+                  className={cn(
+                    "w-full py-3 rounded-xl text-base font-bold transition-all duration-300",
+                    isIdentityVerified
+                      ? "bg-green-500 text-white cursor-default"
+                      : "bg-primary hover:bg-primary-dark text-white hover:scale-[1.02] hover:shadow-lg",
+                    isOTPLoading && "opacity-50 cursor-not-allowed"
                   )}
-                  {errors.customerPhone && (
-                    <p className="text-red-500 text-sm mt-1">
-                      {errors.customerPhone}
-                    </p>
+                >
+                  {isIdentityVerified ? (
+                    <span className="flex items-center justify-center gap-2">
+                      ✓ تم التحقق من الهوية
+                    </span>
+                  ) : isOTPLoading ? (
+                    <span className="flex items-center justify-center gap-2">
+                      <span className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+                      جاري التحقق...
+                    </span>
+                  ) : (
+                    "التحقق من الهوية"
                   )}
-                </div>
-              </div>
+                </button>
+              </>
             )}
 
             <div className="bg-[#FCF9F466] space-y-4 border rounded-lg p-3 lg:p-5">
@@ -1122,7 +1194,11 @@ export default function BookingForm({
             type="submit"
             onClick={handleSubmit}
             disabled={
-              isSubmitting || isCalculating || isRedirecting || isOTPLoading
+              isSubmitting || 
+              isCalculating || 
+              isRedirecting || 
+              isOTPLoading ||
+              (!isIdentityVerified && !isAuthenticated) // ✅ معطل لو لم يتم التحقق
             }
             className="w-full bg-primary hover:bg-primary-dark text-white py-4 rounded-xl text-lg font-bold transition-all duration-300 hover:scale-[1.02] hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
           >
@@ -1137,9 +1213,18 @@ export default function BookingForm({
                 جاري التوجيه لبوابة الدفع...
               </span>
             ) : (
-              `احجز الآن (${rentalType})`
+              `احجز الآن `
             )}
           </button>
+           {/* `احجز الآن (${rentalType})` */}
+
+          {/* رسالة توضيحية لو لم يتم التحقق */}
+          {!isIdentityVerified && !isAuthenticated && (
+            <p className="text-xs text-center text-amber-600">
+              ⚠️ يرجى التحقق من هويتك أولاً لتفعيل زر الحجز
+            </p>
+          )}
+
           <Download3/>
         </div>
 

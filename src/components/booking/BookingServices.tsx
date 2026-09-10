@@ -58,9 +58,9 @@ export default function BookingServices({
               key={service.id}
               type="button"
               onClick={() => handleToggle(service.id)}
-              className={`w-full flex items-center justify-between px-4 py-3 rounded-xl border-2 transition-all ${
+              className={`w-full flex items-center justify-between px-4 py-3 rounded-xl border transition-all ${
                 isSelected
-                  ? 'border-primary bg-primary/5'
+                  ? 'border-[#] bg-primary/1'
                   : 'border-gray-200 hover:border-primary/30'
               } ${isFirst ? 'cursor-default' : 'cursor-pointer'}`}
             >
@@ -72,13 +72,13 @@ export default function BookingServices({
                
            
               <div className="flex items-center gap-4">
-                 <p className="text-sm lg:text-base font-bold text-primary">
+                 <p className="text-sm lg:text-base font-bold text-[#4b398e]">
                   {service.price} ريال
                 </p>
                 <div
                   className={`w-5 h-5 rounded border-2 flex items-center justify-center transition-colors ${
                     isSelected
-                      ? 'border-primary bg-primary text-white'
+                      ? 'border-[#4b398e] bg-[#4b398e] text-white'
                       : 'border-gray-300'
                   }`}
                 >

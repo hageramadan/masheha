@@ -141,12 +141,12 @@ function CarCard({
           </div>
 
           <div className="flex items-center justify-center gap-2">
-            <span className="text-sm lg:text-2xl font-bold text-primary">
+            <span className="text-sm lg:text-2xl font-bold text-[#4b398e]">
               {price}
             </span>
             <div className="flex lg:flex-col items-center">
-              <span className="text-xs lg:text-sm text-primary">ر.س</span>
-              <span className="text-xs text-primary">/ {period}</span>
+              <span className="text-xs lg:text-sm font-semibold text-[#4b398e]">ر.س</span>
+              <span className="text-xs text-[#4b398e] font-semibold">/ {period}</span>
             </div>
           </div>
         </div>

@@ -251,7 +251,7 @@ export default function BookingDetails({
     return (
       <div className="bg-white min-h-screen flex items-center justify-center">
         <div className="text-center">
-          <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-[#012738] border-r-transparent"></div>
+          <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-[#4b398e] border-r-transparent"></div>
         </div>
       </div>
     );
@@ -264,7 +264,7 @@ export default function BookingDetails({
           <p className="text-red-500">{error || "لم يتم العثور على الحجز"}</p>
           <button
             onClick={onBack}
-            className="mt-4 px-6 py-2 bg-[#012738] text-white rounded-lg hover:bg-[#012738]/90 transition-colors"
+            className="mt-4 px-6 py-2 bg-[#4b398e] text-white rounded-lg hover:bg-[#4b398e]/90 transition-colors"
           >
             العودة إلى القائمة
           </button>
@@ -297,7 +297,7 @@ export default function BookingDetails({
       <button
         onClick={onBack}
         className={cn(
-          "flex items-center gap-2 text-gray-600 hover:text-[#012738] transition-colors py-4",
+          "flex items-center gap-2 text-gray-600 hover:text-[#4b398e] transition-colors py-4",
           "transform transition-all duration-500 ease-out",
           isVisible ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-4",
         )}
@@ -349,16 +349,29 @@ export default function BookingDetails({
                 </p>
               </div>
               <div className="flex items-center gap-1 shrink-0">
-                <span className="text-sm lg:text-xl font-bold text-[#012738]">
+                <span className="text-sm lg:text-xl font-bold text-[#4b398e]">
                   {booking.total_amount}
                 </span>
-                <Image
+                {/* <Image
                   src="/images/SAR.png"
                   alt="ريال"
                   width={20}
                   height={20}
-                  className="w-4 h-4 lg:w-5 lg:h-5"
-                />
+                  className="w-4 h-4 lg:w-5 lg:h-5  text-[#4b398e]"
+                /> */}
+                <span
+  className="inline-block w-4 h-4 lg:w-5 lg:h-5 bg-[#4b398e]"
+  style={{
+    WebkitMaskImage: "url('/images/SAR.png')",
+    maskImage: "url('/images/SAR.png')",
+    WebkitMaskSize: "contain",
+    maskSize: "contain",
+    WebkitMaskRepeat: "no-repeat",
+    maskRepeat: "no-repeat",
+    WebkitMaskPosition: "center",
+    maskPosition: "center",
+  }}
+/>
               </div>
             </div>
             {booking.delivery_address && (
@@ -380,7 +393,7 @@ export default function BookingDetails({
         >
           <div className="flex items-center gap-1 lg:gap-2">
             <div className="shadow shadow-[#0000001A] p-2  rounded-full">
-              <RxCalendar className="w-5 h-5 text-[#012738] " />
+              <RxCalendar className="w-5 h-5 text-[#4b398e] " />
             </div>
 
             <h3 className="text-base font-bold text-[#1F2937]">تاريخ الحجز</h3>
@@ -391,7 +404,7 @@ export default function BookingDetails({
           <div className="space-y-3">
             <div className="flex items-center justify-between">
               <p className="text-sm font-medium text-[#4F5352]">مدة الحجز</p>
-              <p className="text-sm font-bold text-[#012738]">
+              <p className="text-sm font-bold text-[#4b398e]">
                 {booking.total_days} يوم
               </p>
             </div>
@@ -401,38 +414,38 @@ export default function BookingDetails({
                 <div className="flex items-center justify-between gap-0.5">
                   <div className="flex items-center gap-1">
                     <div className=" p-1  rounded-full">
-                      <PiCalendarBlank className="w-4 h-4 text-[#012738]" />
+                      <PiCalendarBlank className="w-4 h-4 text-[#4b398e]" />
                     </div>
 
                     <p className="text-sm font-bold text-[#4F5352]">
                       تاريخ الاستلام
                     </p>
                   </div>
-                  <p className="text-sm font-bold text-[#012738]">
+                  <p className="text-sm font-bold text-[#313131]">
                     {formatDate(booking.start_date)}
                   </p>
                 </div>
                 <div className="flex items-center justify-between mt-3">
                   <div className="flex items-center gap-1">
                     <div className=" p-1  rounded-full">
-                      <PiCalendarBlank className="w-4 h-4 text-[#012738]" />
+                      <PiCalendarBlank className="w-4 h-4 text-[#4b398e]" />
                     </div>
 
                     <p className="text-sm font-bold text-[#4F5352]">
                       تاريخ الإرجاع
                     </p>
                   </div>
-                  <p className="text-sm font-bold text-[#012738]">
+                  <p className="text-sm font-bold text-[#313131]">
                     {formatDate(booking.end_date)}
                   </p>
                 </div>
               </div>
               <div className="flex flex-col items-center h-full">
-                <div className="flex-1 w-px bg-[#012738] min-h-3"></div>
-                <div className="w-2 h-2 rounded-full bg-[#012738]"></div>
-                <div className="flex-1 w-px bg-[#012738] min-h-6"></div>
-                <div className="w-2 h-2 rounded-full bg-[#012738] "></div>
-                <div className="flex-1 w-px bg-[#012738] min-h-3"></div>
+                <div className="flex-1 w-px bg-[#4b398e] min-h-3"></div>
+                <div className="w-2 h-2 rounded-full bg-[#4b398e]"></div>
+                <div className="flex-1 w-px bg-[#4b398e] min-h-6"></div>
+                <div className="w-2 h-2 rounded-full bg-[#4b398e] "></div>
+                <div className="flex-1 w-px bg-[#4b398e] min-h-3"></div>
               </div>
             </div>
 
@@ -451,7 +464,7 @@ export default function BookingDetails({
         >
           <div className="flex items-center gap-1 lg:gap-2">
             <div className="shadow shadow-[#0000001A] p-2  rounded-full">
-              <MdOutlinePayment className="w-5 h-5 text-[#012738] " />
+              <MdOutlinePayment className="w-5 h-5 text-[#4b398e] " />
             </div>
 
             <h3 className="text-base font-bold text-[#191C1F]">تفاصيل الدفع</h3>
@@ -460,17 +473,17 @@ export default function BookingDetails({
             <div className="flex justify-between text-sm">
               <div className="flex items-center gap-1">
                   <div className="p-1 rounded-full">
-                    <FaMoneyBills className="w-5 h-5 text-[#012738] " />
+                    <FaMoneyBills className="w-5 h-5 text-[#4b398e] " />
                   </div>
 
                    <span className="text-gray-600">السعر الأساسي</span>
                 </div>
             
               <div className="flex items-center gap-1">
-                <span className="font-bold text-[#717182] text-sm">
+                <span className="font-bold text-[#4b398e] text-sm">
                   {booking.price_breakdown.base_price}
                 </span>
-                <span className="text-[#717182] text-sm font-bold">ريال</span>
+                <span className="text-[#4b398e] text-sm font-bold">ريال</span>
               </div>
             </div>
 
@@ -493,17 +506,17 @@ export default function BookingDetails({
             <div className="flex justify-between text-sm">
               <div className="flex items-center gap-1">
                 <div className="p-1 rounded-full">
-                  <FaPercent className="w-5 h-5 text-[#012738] " />
+                  <FaPercent className="w-5 h-5 text-[#4b398e] " />
                 </div>
 
                 <span className="text-gray-600">ضريبة القيمة المضافة</span>
               </div>
 
               <div className="flex items-center gap-1">
-                <span className="font-bold text-[#717182] text-sm ">
+                <span className="font-bold text-[#4b398e] text-sm ">
                   {booking.price_breakdown.tax}
                 </span>
-                <span className="text-[#717182] text-sm font-bold">ريال</span>
+                <span className="text-[#4b398e] text-sm font-bold">ريال</span>
               </div>
             </div>
 
@@ -511,28 +524,28 @@ export default function BookingDetails({
               <div className="flex justify-between text-sm">
                 <div className="flex items-center gap-1">
                   <div className="p-1 rounded-full">
-                    <LiaMoneyBillWaveSolid className="w-5 h-5 text-[#012738] " />
+                    <LiaMoneyBillWaveSolid className="w-5 h-5 text-[#4b398e] " />
                   </div>
 
                   <span className="text-gray-600">رسوم الخدمات الاضافية</span>
                 </div>
 
-                <div className="flex items-center gap-1 text-[#717182] text-sm font-bold">
-                  <span className="text-[#717182] text-sm font-bold">
+                <div className="flex items-center gap-1 text-[#4b398e] text-sm font-bold">
+                  <span className="text-[#4b398e] text-sm font-bold">
                     {booking.additional_services_total_price}
                   </span>
-                   <span className="text-[#717182] text-sm font-bold">ريال</span>
+                   <span className="text-[#4b398e] text-sm font-bold">ريال</span>
                 </div>
               </div>
             )}
 
             <div className="flex justify-between text-base font-bold pt-2 border-t border-gray-200">
-              <span className="text-[#0079AB] text-base font-bold">الإجمالي</span>
+              <span className="text-[#323333] text-base font-bold">الإجمالي</span>
               <div className="flex items-center gap-1">
-                <span className="text-base text-[#0079AB]">
+                <span className="text-base text-[#4b398e]">
                   {booking.price_breakdown.total}
                 </span>
-                <span className="text-[#0079AB] text-base font-bold">ريال</span>
+                <span className="text-[#4b398e] text-base font-bold">ريال</span>
               </div>
             </div>
           </div>
@@ -548,7 +561,7 @@ export default function BookingDetails({
           <h3 className="text-base font-bold text-[#191C1F]">طريقة الاستلام</h3>
           <div className="space-y-2">
             <div className="flex items-start gap-3">
-              <FaMapMarkerAlt className="h-4 w-4 text-[#012738] mt-0.5" />
+              <FaMapMarkerAlt className="h-4 w-4 text-[#4b398e] mt-0.5" />
               <div>
                 <p className="font-bold text-sm text-[#191C1F]">
                   {booking.delivery_type === "to_location"
@@ -577,18 +590,18 @@ export default function BookingDetails({
 >
   <div className="flex items-center gap-1 lg:gap-2">
     <div className="shadow-lg shadow-[#0000001A] p-2 rounded-full">
-      <FaUser className="w-5 h-5 text-[#012738]" />
+      <FaUser className="w-5 h-5 text-[#4b398e]" />
     </div>
     <h3 className="text-base font-bold text-[#191C1F]">بيانات العميل</h3>
   </div>
   <div className="grid grid-cols-2 gap-3">
     <div className="flex flex-col justify-between gap-1 text-sm">
       <span className="text-gray-600">الاسم</span>
-      <span className="font-bold text-[#012738]">{booking.user.name}</span>
+      <span className="font-bold text-[#4b398e]">{booking.user.name}</span>
     </div>
     <div className="flex flex-col justify-between text-sm gap-1">
       <span className="text-gray-600">رقم الجوال</span>
-      <span className="font-bold text-[#012738]">{booking.user.phone}</span>
+      <span className="font-bold text-[#4b398e]">{booking.user.phone}</span>
     </div>
     
   </div>
@@ -622,7 +635,7 @@ export default function BookingDetails({
             <div className="flex items-end">
               <button
                 onClick={() => setShowPaymentPopup(true)}
-                className="w-fit flex items-center justify-center gap-2 px-4 py-2 bg-[#012738] text-white rounded-xl hover:bg-[#012738]/90 transition-all hover:scale-[1.02] text-sm"
+                className="w-fit flex items-center justify-center gap-2 px-4 py-2 bg-[#4b398e] text-white rounded-xl hover:bg-[#4b398e]/90 transition-all hover:scale-[1.02] text-sm"
               >
                 <FaCreditCard className="h-4 w-4" />
                 <span className="font-medium">إعادة الدفع</span>
@@ -742,7 +755,7 @@ export default function BookingDetails({
                 className={cn(
                   "w-full py-3 rounded-xl text-white font-bold transition-all",
                   selectedPaymentMethod && !isProcessingPayment
-                    ? "bg-[#012738] hover:bg-[#012738]/90 hover:scale-[1.02]"
+                    ? "bg-[#4b398e] hover:bg-[#4b398e]/90 hover:scale-[1.02]"
                     : "bg-gray-300 cursor-not-allowed",
                 )}
               >

@@ -64,12 +64,12 @@ export default function BookingSummary({
         </p> */}
         <div className="flex items-center gap-1">
           <div className="p-1 rounded-full">
-            <FaMoneyBills className="w-5 h-5 text-[#012738] " />
+            <FaMoneyBills className="w-5 h-5 text-[#4b398e] " />
           </div>
 
           <span className="text-gray-600">السعر الأساسي</span>
         </div>
-        <p className="text-[#717182] text-sm font-bold">
+        <p className="text-[#4b398e] text-sm font-bold">
           {formatCurrency(totals.basePrice || carTotal)}
         </p>
       </div>
@@ -80,7 +80,7 @@ export default function BookingSummary({
             {totals.discount > 0 && (
               <div className="flex justify-between text-sm pb-1 ">
                 <span className="text-gray-500">الخصم</span>
-                <span className="text-[#717182] text-sm font-bold">
+                <span className="text-[#4b398e] text-sm font-bold">
                   -{formatCurrency(totals.discount)}
                 </span>
               </div>
@@ -89,7 +89,7 @@ export default function BookingSummary({
             {totals.couponDiscount > 0 && (
               <div className="flex justify-between text-sm pb-1 ">
                 <span className="text-gray-500">خصم الكوبون</span>
-                <span className="text-[#717182] text-sm font-bold">
+                <span className="text-[#4b398e] text-sm font-bold">
                   -{formatCurrency(totals.couponDiscount)}
                 </span>
               </div>
@@ -101,13 +101,13 @@ export default function BookingSummary({
           <div className="flex justify-between text-sm pb-1 ">
             <div className="flex items-center gap-1">
               <div className="p-1 rounded-full">
-                <LiaMoneyBillWaveSolid className="w-5 h-5 text-[#012738] " />
+                <LiaMoneyBillWaveSolid className="w-5 h-5 text-[#4b398e] " />
               </div>
 
               <span className="text-gray-600">رسوم الخدمات الاضافية</span>
             </div>
             {/* <span className="text-gray-500">خدمات إضافية</span> */}
-            <p className="text-[#717182] text-sm font-bold">
+            <p className="text-[#4b398e] text-sm font-bold">
               {formatCurrency(totals.servicesTotal)}
             </p>
           </div>
@@ -126,13 +126,13 @@ export default function BookingSummary({
           <div className="flex justify-between text-sm pb-2 border-b border-gray-200">
             <div className="flex items-center gap-1">
               <div className="p-1 rounded-full">
-                <FaPercent className="w-4 h-4 text-[#012738] " />
+                <FaPercent className="w-4 h-4 text-[#4b398e] " />
               </div>
 
               <span className="text-gray-600">ضريبة القيمة المضافة</span>
             </div>
             {/* <span className="text-gray-500">الضريبة</span> */}
-            <span className="text-[#717182] text-sm font-bold">
+            <span className="text-[#4b398e] text-sm font-bold">
               {formatCurrency(totals.tax)}
             </span>
           </div>
@@ -141,8 +141,8 @@ export default function BookingSummary({
 
       <div className="space-y-2 pt-2">
         <div className="flex justify-between text-lg font-bold">
-          <span className="text-[#0079AB] text-base font-bold">الإجمالي</span>
-          <span className="text-[#0079AB] text-base font-bold">
+          <span className="text-[#1b1b1b] text-base font-bold">الإجمالي</span>
+          <span className="text-[#4b398e] text-base font-bold">
             {formatCurrency(finalTotal)}
           </span>
         </div>

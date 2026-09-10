@@ -41,10 +41,10 @@ export default function CarDetails({
 
   return (
     <div className="bg-white rounded-2xl border overflow-hidden">
-      <div className="grid grid-cols-1 md:grid-cols-5 gap-3 p-3 md:p-4">
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-3 p-3 md:p-4">
         {/* عمود الصورة - مساحة اكبر */}
-        <div className="md:col-span-2">
-          <div className="relative h-[130px] md:h-[160px] lg:h-[180px] overflow-hidden rounded-lg">
+        <div className="md:col-span-1">
+          <div className="relative h-[130px] md:h-[100px] lg:h-[110px] overflow-hidden rounded-lg">
             {imageSrc ? (
               <Image
                 src={imageSrc}
@@ -64,7 +64,7 @@ export default function CarDetails({
             )}
           </div>
         </div>
-
+   {/* #4b398e */}
         {/* عمود المعلومات - في النص */}
         <div className="md:col-span-2 space-y-1 w-full mx-auto flex flex-col justify-center">
           <div className="flex items-center justify-between">
@@ -88,7 +88,7 @@ export default function CarDetails({
             </div>
           </div>
           
-          <p className="text-sm text-[#717182]">أقل مدة للتأجير مع خدمة التوصيل (2 أيام)</p>
+          {/* <p className="text-sm text-[#717182]">أقل مدة للتأجير مع خدمة التوصيل (2 أيام)</p> */}
         </div>
 
         {/* عمود السعر - في النص */}
