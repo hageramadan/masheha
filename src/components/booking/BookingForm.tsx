@@ -941,7 +941,7 @@ export default function BookingForm({
                       جاري التحقق...
                     </span>
                   ) : (
-                    "التحقق من الهوية"
+                    "تحقق "
                   )}
                 </button>
               </>
