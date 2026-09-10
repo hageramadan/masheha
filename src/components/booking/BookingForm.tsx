@@ -140,6 +140,9 @@ export default function BookingForm({
   // ✅ حالة جديدة لتتبع ما إذا تم التحقق من الهوية بالكامل
   const [isIdentityVerified, setIsIdentityVerified] = useState(false);
 
+  // ✅ حالة جديدة لعرض "جاري التحقق" من أول ما يضغط المستخدم لحد ما تخلص العملية
+  const [isVerifying, setIsVerifying] = useState(false);
+
   // حالة البوب اب
   const [isOTPPopupOpen, setIsOTPPopupOpen] = useState(false);
 
@@ -147,7 +150,7 @@ export default function BookingForm({
   const [availableDateList, setAvailableDateList] = useState<Date[]>([]);
   // الفهرس المختار في سلايدر التاريخ
   const [selectedDateIndex, setSelectedDateIndex] = useState<number>(0);
-  // قائمة الأوقات المتاحة للتحديد في السلايدر الوقت
+  // قائمة الأوقات المتاحة للتحديد في سلايدر الوقت
   const [availableTimeList, setAvailableTimeList] = useState<string[]>([]);
   // الفهرس المختار في سلايدر الوقت
   const [selectedTimeIndex, setSelectedTimeIndex] = useState<number>(0);
@@ -264,6 +267,7 @@ export default function BookingForm({
     setOtpCode("");
     setIsPhoneVerified(false);
     setIsIdentityVerified(false); // ✅ إعادة تعيين حالة التحقق
+    setIsVerifying(false); // ✅ إعادة تعيين حالة "جاري التحقق"
     setShowOTPInput(false);
     setIsUserRegistered(false);
     setIsOTPPopupOpen(false);
@@ -457,6 +461,7 @@ export default function BookingForm({
     setIsIdentityVerified(false);
     setIsPhoneVerified(false);
     setIsUserRegistered(false);
+    setIsVerifying(false); // ✅
   };
 
   // دالة تنسيق رقم الهاتف لصيغة Firebase
@@ -537,6 +542,7 @@ export default function BookingForm({
       setIsIdentityVerified(true); // ✅ تم التحقق من الهوية بالكامل
       setShowOTPInput(false);
       setIsOTPPopupOpen(false);
+      setIsVerifying(false); // ✅ أوقف حالة "جاري التحقق" بعد النجاح
       toast.success("✓ تم التحقق من هويتك بنجاح");
       // ⚠️ لا ننفذ submit هنا - المستخدم يضغط زر الحجز بنفسه
       return true;
@@ -580,25 +586,37 @@ export default function BookingForm({
       return;
     }
 
-    // 3️⃣ تسجيل المستخدم في Backend (لو مش مسجل)
-    if (!isUserRegistered && !isAuthenticated) {
-      const registered = await handleRegisterUser();
-      if (!registered) {
-        toast.error("فشل تسجيل المستخدم");
-        return;
-      }
-    }
+    // ✅ ابدأ حالة "جاري التحقق" من أول ما يضغط المستخدم
+    setIsVerifying(true);
 
-    // 4️⃣ إرسال OTP وفتح البوب اب
-    if (!isOTPSent) {
-      const sent = await handleSendOTP();
-      if (!sent) {
-        toast.error("فشل إرسال رمز التحقق");
-        return;
+    try {
+      // 3️⃣ تسجيل المستخدم في Backend (لو مش مسجل)
+      if (!isUserRegistered && !isAuthenticated) {
+        const registered = await handleRegisterUser();
+        if (!registered) {
+          toast.error("فشل تسجيل المستخدم");
+          setIsVerifying(false);
+          return;
+        }
       }
-    } else {
-      // لو OTP مرسل بالفعل، افتح البوب اب
-      setIsOTPPopupOpen(true);
+
+      // 4️⃣ إرسال OTP وفتح البوب اب
+      if (!isOTPSent) {
+        const sent = await handleSendOTP();
+        if (!sent) {
+          toast.error("فشل إرسال رمز التحقق");
+          setIsVerifying(false);
+          return;
+        }
+      } else {
+        // لو OTP مرسل بالفعل، افتح البوب اب
+        setIsOTPPopupOpen(true);
+      }
+      // ⚠️ ملاحظة: لا نغلق isVerifying هنا لأننا مستنيين المستخدم يدخل الكود
+      // هيتم إغلاقها في handleVerifyOTPFromPopup بعد النجاح
+    } catch (error) {
+      console.error(error);
+      setIsVerifying(false);
     }
   };
 
@@ -875,92 +893,94 @@ export default function BookingForm({
         <div className="lg:col-span-1 ">
           <DownloadSection2 />
           <form onSubmit={handleSubmit} className="space-y-8 mb-4">
-            {!isAuthenticated && (
-              <>
-                <div className="bg-[#FCF9F466]  border rounded-lg p-3 lg:p-5 space-y-4">
-                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-2">
-                    <div>
-                      <label className="block text-sm font-bold text-[#1F2937] mb-2">
-                        الاسم *
-                      </label>
-                      <input
-                        type="text"
-                        value={bookingData.customerName}
-                        onChange={(e) =>
-                          updateField("customerName", e.target.value)
-                        }
-                        className={`w-full px-4 py-3 border-2 rounded-xl focus:outline-none transition-colors ${
-                          errors.customerName
-                            ? "border-red-500"
-                            : "border-gray-200 focus:border-primary"
-                        } ${isIdentityVerified ? "bg-gray-100 cursor-not-allowed" : ""}`}
-                        placeholder="الاسم"
-                        disabled={isIdentityVerified}
-                      />
-                      {isIdentityVerified && (
-                        <p className="text-xs text-green-600 mt-1">
-                          ✓ تم التحقق من الهوية
-                        </p>
-                      )}
-                      {errors.customerName && (
-                        <p className="text-red-500 text-sm mt-1">
-                          {errors.customerName}
-                        </p>
-                      )}
-                    </div>
+            <div className="bg-[#FCF9F466] border rounded-lg p-3 lg:p-5 space-y-4">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-2">
+                <div>
+                  <label className="block text-sm font-bold text-[#1F2937] mb-2">
+                    الاسم *
+                  </label>
 
-                    <div>
-                      <label className="block text-sm font-bold text-[#1F2937] mb-2">
-                        رقم الجوال *
-                      </label>
-                      <PhoneInput
-                        key={phoneInputKey}
-                        value={phoneNumber}
-                        onChange={handlePhoneChange}
-                        required={true}
-                      />
-                      {isIdentityVerified && (
-                        <p className="text-xs text-green-600 mt-1">
-                          ✓ تم التحقق من الهوية
-                        </p>
-                      )}
-                      {errors.customerPhone && (
-                        <p className="text-red-500 text-sm mt-1">
-                          {errors.customerPhone}
-                        </p>
-                      )}
-                    </div>
-                  </div>
+                  <input
+                    type="text"
+                    value={bookingData.customerName}
+                    onChange={(e) =>
+                      updateField("customerName", e.target.value)
+                    }
+                    className={`w-full px-4 py-3 border-2 rounded-xl focus:outline-none transition-colors ${
+                      errors.customerName
+                        ? "border-red-500"
+                        : "border-gray-200 focus:border-primary"
+                    }`}
+                    placeholder="الاسم"
+                  />
 
-                  {/* ✅ زر التحقق من الهوية (Register + OTP) */}
-                  <button
-                    type="button"
-                    onClick={handleVerifyIdentity}
-                    disabled={isIdentityVerified || isOTPLoading}
-                    className={cn(
-                      "w-full py-3 rounded-xl text-base font-bold transition-all duration-300",
-                      isIdentityVerified
-                        ? "bg-green-500 text-white cursor-default"
-                        : "bg-primary hover:bg-primary-dark text-white hover:scale-[1.02] hover:shadow-lg",
-                      isOTPLoading && "opacity-50 cursor-not-allowed",
-                    )}
-                  >
-                    {isIdentityVerified ? (
-                      <span className="flex items-center justify-center gap-2">
-                        ✓ تم التحقق من الهوية
-                      </span>
-                    ) : isOTPLoading ? (
-                      <span className="flex items-center justify-center gap-2">
-                        <span className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
-                        جاري التحقق...
-                      </span>
-                    ) : (
-                      "تحقق "
-                    )}
-                  </button>
+                  {errors.customerName && (
+                    <p className="text-red-500 text-sm mt-1">
+                      {errors.customerName}
+                    </p>
+                  )}
                 </div>
-              </>
-            )}
+
+                <div>
+                  <label className="block text-sm font-bold text-[#1F2937] mb-2">
+                    رقم الجوال *
+                  </label>
+
+                  <PhoneInput
+                    key={phoneInputKey}
+                    value={phoneNumber}
+                    onChange={handlePhoneChange}
+                    required={true}
+                  />
+
+                  {errors.customerPhone && (
+                    <p className="text-red-500 text-sm mt-1">
+                      {errors.customerPhone}
+                    </p>
+                  )}
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={handleVerifyIdentity}
+                disabled={isOTPLoading || isVerifying || isIdentityVerified}
+                className={cn(
+                  "w-full py-3 rounded-xl text-base font-bold transition-all duration-300 flex items-center justify-center gap-2",
+                  isIdentityVerified
+                    ? "bg-primary text-white cursor-default"
+                    : "bg-primary hover:bg-primary-dark text-white hover:scale-[1.02] hover:shadow-lg",
+                  (isOTPLoading || isVerifying) &&
+                    "opacity-50 cursor-not-allowed",
+                )}
+              >
+                {isOTPLoading || isVerifying ? (
+                  <>
+                    <span className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+                    جاري التحقق ...
+                  </>
+                ) : isIdentityVerified ? (
+                  <>
+                    <svg
+                      className="w-5 h-5"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={3}
+                        d="M5 13l4 4L19 7"
+                      />
+                    </svg>
+                    تم التحقق
+                  </>
+                ) : (
+                  "تحقق"
+                )}
+              </button>
+            </div>
 
             <div className="bg-[#FCF9F466] space-y-4 border rounded-lg p-3 lg:p-5">
               <div>
@@ -1213,6 +1233,7 @@ export default function BookingForm({
               isCalculating ||
               isRedirecting ||
               isOTPLoading ||
+              isVerifying || // ✅ معطل أثناء التحقق
               (!isIdentityVerified && !isAuthenticated) // ✅ معطل لو لم يتم التحقق
             }
             className="w-full bg-primary hover:bg-primary-dark text-white py-4 rounded-xl text-lg font-bold transition-all duration-300 hover:scale-[1.02] hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
@@ -1257,6 +1278,7 @@ export default function BookingForm({
         onClose={() => {
           setIsOTPPopupOpen(false);
           setShowOTPInput(false);
+          setIsVerifying(false); // ✅ أوقف حالة "جاري التحقق" لو المستخدم قفل البوب اب
         }}
         onVerify={handleVerifyOTPFromPopup}
         isLoading={isOTPLoading}
