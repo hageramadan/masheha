@@ -111,7 +111,7 @@ export default function BookingForm({
   // ========== فترات الحجز اليومي ==========
   const [availableDates, setAvailableDates] = useState<AvailableDate[]>([]);
   const [availableTimes, setAvailableTimes] = useState<AvailableHour[]>([]);
-  
+
   // ========== فترات الحجز الشهري ==========
   const [availableMonths, setAvailableMonths] = useState<AvailableMonth[]>([]);
   const [selectedMonth, setSelectedMonth] = useState<AvailableMonth | null>(
@@ -120,8 +120,12 @@ export default function BookingForm({
   const [selectedPeriod, setSelectedPeriod] = useState<AvailablePeriod | null>(
     null,
   );
-  const [monthlyAvailableDates, setMonthlyAvailableDates] = useState<AvailableDate[]>([]);
-  const [monthlyAvailableTimes, setMonthlyAvailableTimes] = useState<AvailableHour[]>([]);
+  const [monthlyAvailableDates, setMonthlyAvailableDates] = useState<
+    AvailableDate[]
+  >([]);
+  const [monthlyAvailableTimes, setMonthlyAvailableTimes] = useState<
+    AvailableHour[]
+  >([]);
 
   const [isLoadingPeriods, setIsLoadingPeriods] = useState(true);
 
@@ -319,7 +323,10 @@ export default function BookingForm({
           setMonthlyDateList(dailyDates);
 
           // محاولة الحصول على period_id إذا كان متاحًا من monthlyData
-          if (monthlyData.available_months && monthlyData.available_months.length > 0) {
+          if (
+            monthlyData.available_months &&
+            monthlyData.available_months.length > 0
+          ) {
             const months = monthlyData.available_months.filter(
               (month: any) => month.is_available,
             );
@@ -331,13 +338,18 @@ export default function BookingForm({
               setSelectedPeriod(firstPeriod);
               setPeriodId(firstPeriod.id);
               updateField("rentalDays", firstPeriod.days_count);
-              
+
               // ✅ حساب عدد الأشهر من days_count (شهر = 30 يوم)
-              const monthsCount = Math.max(1, Math.round(firstPeriod.days_count / 30));
+              const monthsCount = Math.max(
+                1,
+                Math.round(firstPeriod.days_count / 30),
+              );
               setRentalMonths(monthsCount);
             }
           } else {
-            console.warn("⚠️ No monthly data available, period_id will be null");
+            console.warn(
+              "⚠️ No monthly data available, period_id will be null",
+            );
             setPeriodId(0);
           }
 
@@ -370,7 +382,11 @@ export default function BookingForm({
         }
 
         // تعيين التاريخ الأول تلقائياً للحجز اليومي
-        if (bookingType === "daily" && dailyDates.length > 0 && !bookingData.rentalDate) {
+        if (
+          bookingType === "daily" &&
+          dailyDates.length > 0 &&
+          !bookingData.rentalDate
+        ) {
           const firstDate = dailyDates[0];
           const dateStr = format(firstDate, "yyyy-MM-dd");
           updateField("rentalDate", dateStr);
@@ -391,7 +407,6 @@ export default function BookingForm({
             }
           }
         }
-
       } catch (error) {
         console.error("Error fetching periods:", error);
       } finally {
@@ -664,7 +679,7 @@ export default function BookingForm({
         setSelectedPeriod(period);
         setPeriodId(period.id);
         updateField("rentalDays", period.days_count);
-        
+
         // ✅ حساب عدد الأشهر من days_count
         const monthsCount = Math.max(1, Math.round(period.days_count / 30));
         setRentalMonths(monthsCount);
@@ -672,9 +687,7 @@ export default function BookingForm({
     }
 
     // جلب الأوقات من Daily API
-    const selectedDate = availableDates.find(
-      (d) => d.date === dateStr,
-    );
+    const selectedDate = availableDates.find((d) => d.date === dateStr);
 
     if (selectedDate) {
       const times = selectedDate.available_hours
@@ -772,7 +785,7 @@ export default function BookingForm({
       updateField("rentalDate", month.month);
       updateField("rentalDays", period.days_count);
       setPeriodId(period.id);
-      
+
       // ✅ حساب عدد الأشهر من days_count
       const monthsCount = Math.max(1, Math.round(period.days_count / 30));
       setRentalMonths(monthsCount);
@@ -860,90 +873,92 @@ export default function BookingForm({
         </div>
 
         <div className="lg:col-span-1 ">
-          <DownloadSection2/>
+          <DownloadSection2 />
           <form onSubmit={handleSubmit} className="space-y-8 mb-4">
             {!isAuthenticated && (
               <>
-                <div className="bg-[#FCF9F466] grid grid-cols-1 lg:grid-cols-2 gap-2 border rounded-lg p-3 lg:p-5">
-                  <div>
-                    <label className="block text-sm font-bold text-[#1F2937] mb-2">
-                      الاسم *
-                    </label>
-                    <input
-                      type="text"
-                      value={bookingData.customerName}
-                      onChange={(e) =>
-                        updateField("customerName", e.target.value)
-                      }
-                      className={`w-full px-4 py-3 border-2 rounded-xl focus:outline-none transition-colors ${
-                        errors.customerName
-                          ? "border-red-500"
-                          : "border-gray-200 focus:border-primary"
-                      } ${isIdentityVerified ? "bg-gray-100 cursor-not-allowed" : ""}`}
-                      placeholder="الاسم"
-                      disabled={isIdentityVerified}
-                    />
-                    {isIdentityVerified && (
-                      <p className="text-xs text-green-600 mt-1">
-                        ✓ تم التحقق من الهوية
-                      </p>
-                    )}
-                    {errors.customerName && (
-                      <p className="text-red-500 text-sm mt-1">
-                        {errors.customerName}
-                      </p>
-                    )}
+                <div className="bg-[#FCF9F466]  border rounded-lg p-3 lg:p-5 space-y-4">
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-2">
+                    <div>
+                      <label className="block text-sm font-bold text-[#1F2937] mb-2">
+                        الاسم *
+                      </label>
+                      <input
+                        type="text"
+                        value={bookingData.customerName}
+                        onChange={(e) =>
+                          updateField("customerName", e.target.value)
+                        }
+                        className={`w-full px-4 py-3 border-2 rounded-xl focus:outline-none transition-colors ${
+                          errors.customerName
+                            ? "border-red-500"
+                            : "border-gray-200 focus:border-primary"
+                        } ${isIdentityVerified ? "bg-gray-100 cursor-not-allowed" : ""}`}
+                        placeholder="الاسم"
+                        disabled={isIdentityVerified}
+                      />
+                      {isIdentityVerified && (
+                        <p className="text-xs text-green-600 mt-1">
+                          ✓ تم التحقق من الهوية
+                        </p>
+                      )}
+                      {errors.customerName && (
+                        <p className="text-red-500 text-sm mt-1">
+                          {errors.customerName}
+                        </p>
+                      )}
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-bold text-[#1F2937] mb-2">
+                        رقم الجوال *
+                      </label>
+                      <PhoneInput
+                        key={phoneInputKey}
+                        value={phoneNumber}
+                        onChange={handlePhoneChange}
+                        required={true}
+                      />
+                      {isIdentityVerified && (
+                        <p className="text-xs text-green-600 mt-1">
+                          ✓ تم التحقق من الهوية
+                        </p>
+                      )}
+                      {errors.customerPhone && (
+                        <p className="text-red-500 text-sm mt-1">
+                          {errors.customerPhone}
+                        </p>
+                      )}
+                    </div>
                   </div>
 
-                  <div>
-                    <label className="block text-sm font-bold text-[#1F2937] mb-2">
-                      رقم الجوال *
-                    </label>
-                    <PhoneInput
-                      key={phoneInputKey}
-                      value={phoneNumber}
-                      onChange={handlePhoneChange}
-                      required={true}
-                    />
-                    {isIdentityVerified && (
-                      <p className="text-xs text-green-600 mt-1">
+                  {/* ✅ زر التحقق من الهوية (Register + OTP) */}
+                  <button
+                    type="button"
+                    onClick={handleVerifyIdentity}
+                    disabled={isIdentityVerified || isOTPLoading}
+                    className={cn(
+                      "w-full py-3 rounded-xl text-base font-bold transition-all duration-300",
+                      isIdentityVerified
+                        ? "bg-green-500 text-white cursor-default"
+                        : "bg-primary hover:bg-primary-dark text-white hover:scale-[1.02] hover:shadow-lg",
+                      isOTPLoading && "opacity-50 cursor-not-allowed",
+                    )}
+                  >
+                    {isIdentityVerified ? (
+                      <span className="flex items-center justify-center gap-2">
                         ✓ تم التحقق من الهوية
-                      </p>
+                      </span>
+                    ) : isOTPLoading ? (
+                      <span className="flex items-center justify-center gap-2">
+                        <span className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+                        جاري التحقق...
+                      </span>
+                    ) : (
+                      "تحقق "
                     )}
-                    {errors.customerPhone && (
-                      <p className="text-red-500 text-sm mt-1">
-                        {errors.customerPhone}
-                      </p>
-                    )}
-                  </div>
+                  </button>
                 </div>
-
-                {/* ✅ زر التحقق من الهوية (Register + OTP) */}
-                <button
-                  type="button"
-                  onClick={handleVerifyIdentity}
-                  disabled={isIdentityVerified || isOTPLoading}
-                  className={cn(
-                    "w-full py-3 rounded-xl text-base font-bold transition-all duration-300",
-                    isIdentityVerified
-                      ? "bg-green-500 text-white cursor-default"
-                      : "bg-primary hover:bg-primary-dark text-white hover:scale-[1.02] hover:shadow-lg",
-                    isOTPLoading && "opacity-50 cursor-not-allowed"
-                  )}
-                >
-                  {isIdentityVerified ? (
-                    <span className="flex items-center justify-center gap-2">
-                      ✓ تم التحقق من الهوية
-                    </span>
-                  ) : isOTPLoading ? (
-                    <span className="flex items-center justify-center gap-2">
-                      <span className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
-                      جاري التحقق...
-                    </span>
-                  ) : (
-                    "تحقق "
-                  )}
-                </button>
               </>
             )}
 
@@ -1194,9 +1209,9 @@ export default function BookingForm({
             type="submit"
             onClick={handleSubmit}
             disabled={
-              isSubmitting || 
-              isCalculating || 
-              isRedirecting || 
+              isSubmitting ||
+              isCalculating ||
+              isRedirecting ||
               isOTPLoading ||
               (!isIdentityVerified && !isAuthenticated) // ✅ معطل لو لم يتم التحقق
             }
@@ -1216,7 +1231,7 @@ export default function BookingForm({
               `احجز الآن `
             )}
           </button>
-           {/* `احجز الآن (${rentalType})` */}
+          {/* `احجز الآن (${rentalType})` */}
 
           {/* رسالة توضيحية لو لم يتم التحقق */}
           {!isIdentityVerified && !isAuthenticated && (
@@ -1225,7 +1240,7 @@ export default function BookingForm({
             </p>
           )}
 
-          <Download3/>
+          <Download3 />
         </div>
 
         <GoogleMapPicker
