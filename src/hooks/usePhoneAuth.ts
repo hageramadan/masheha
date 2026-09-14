@@ -23,47 +23,41 @@ export const usePhoneAuth = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [isOTPSent, setIsOTPSent] = useState(false);
 
-  // ✅ تهيئة reCAPTCHA غير مرئي
-  const setupRecaptcha = (): RecaptchaVerifier | null => {
-    if (typeof window === 'undefined') return null;
+  const setupRecaptcha = () => {
+  if (typeof window === 'undefined') return null;
+  
+  // ✅ إذا كان موجوداً بالفعل، أعد استخدامه
+  if (window.recaptchaVerifier) {
+    return window.recaptchaVerifier;
+  }
 
-    try {
-      // تنظيف أي reCAPTCHA قديم
-      if (window.recaptchaVerifier) {
-        try {
-          window.recaptchaVerifier.clear();
-        } catch (e) {
-          console.log('Cleanup error:', e);
-        }
-        window.recaptchaVerifier = null;
-      }
-
-      // ✅ تأكد إن الـ container موجود
-      const container = document.getElementById('recaptcha-container');
-      if (!container) {
-        console.error('❌ recaptcha-container not found in DOM');
-        return null;
-      }
-
-      // ✅ الحل: size: 'invisible' بدل 'visible'
-      const verifier = new RecaptchaVerifier(auth, 'recaptcha-container', {
-        size: 'invisible', // 🔑 ده اللي يخفيها
-        callback: () => {
-          console.log('✅ reCAPTCHA solved silently');
-        },
-        'expired-callback': () => {
-          console.log('⏰ reCAPTCHA expired');
-          window.recaptchaVerifier = null;
-        },
-      });
-
-      window.recaptchaVerifier = verifier;
-      return verifier;
-    } catch (error) {
-      console.error('reCAPTCHA setup error:', error);
-      return null;
+  try {
+    // ✅ نظّف العنصر أولاً
+    const container = document.getElementById('recaptcha-container');
+    if (container) {
+      container.innerHTML = '';
     }
-  };
+
+    const verifier = new RecaptchaVerifier(auth, 'recaptcha-container', {
+      size: 'invisible',
+      callback: () => console.log('reCAPTCHA solved'),
+      'expired-callback': () => {
+        console.log('reCAPTCHA expired');
+        // ✅ عند الانتهاء، نظّف
+        if (window.recaptchaVerifier) {
+          window.recaptchaVerifier.clear();
+          window.recaptchaVerifier = null;
+        }
+      },
+    });
+
+    window.recaptchaVerifier = verifier;
+    return verifier;
+  } catch (error) {
+    console.error('reCAPTCHA setup error:', error);
+    return null;
+  }
+};
 
   const sendOTP = async (phone: string) => {
     if (!phone) {
