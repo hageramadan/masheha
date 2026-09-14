@@ -516,23 +516,48 @@ export default function BookingForm({
   };
 
   // 2️⃣ إرسال OTP (تفتح البوب اب)
-  const handleSendOTP = async () => {
-    const phone = bookingData.customerPhone?.trim();
-    if (!phone) {
-      toast.error("يرجى إدخال رقم الجوال");
-      return false;
-    }
+  // const handleSendOTP = async () => {
+  //   const phone = bookingData.customerPhone?.trim();
+  //   if (!phone) {
+  //     toast.error("يرجى إدخال رقم الجوال");
+  //     return false;
+  //   }
 
-    const formattedPhone = formatPhoneNumber(phone, countryCode);
-    const sent = await sendOTP(formattedPhone);
+  //   const formattedPhone = formatPhoneNumber(phone, countryCode);
+  //   const sent = await sendOTP(formattedPhone);
 
-    if (sent) {
-      setShowOTPInput(true);
-      setIsOTPPopupOpen(true);
-      return true;
-    }
-    return false;
+  //   if (sent) {
+  //     setShowOTPInput(true);
+  //     setIsOTPPopupOpen(true);
+  //     return true;
+  //   }
+  //   return false;
+  // };
+  const handleSendOTP = async (): Promise<{
+  success: boolean;
+  errorCode?: string;
+}> => {
+  const phone = bookingData.customerPhone?.trim();
+  if (!phone) {
+    toast.error("يرجى إدخال رقم الجوال");
+    return { success: false, errorCode: "empty-phone" };
+  }
+
+  const formattedPhone = formatPhoneNumber(phone, countryCode);
+  
+  // ✅ cast صريح عشان نضمن الشكل
+  const result = (await sendOTP(formattedPhone)) as {
+    success: boolean;
+    errorCode?: string;
   };
+
+  if (result.success) {
+    setShowOTPInput(true);
+    setIsOTPPopupOpen(true);
+  }
+
+  return result;
+};
 
   // 3️⃣ ✅ التحقق من OTP (من البوب اب) - وبعدها Register
   const handleVerifyOTPFromPopup = async (code: string): Promise<boolean> => {
@@ -593,49 +618,121 @@ export default function BookingForm({
   };
 
   // ✅ دالة التحقق من الهوية (OTP أولاً ثم Register) - للزر الأول
-  const handleVerifyIdentity = async () => {
-    // 1️⃣ التحقق من الاسم ورقم الجوال فقط
-    const name = bookingData.customerName?.trim();
-    const phone = bookingData.customerPhone?.trim();
+  // const handleVerifyIdentity = async () => {
+  //   // 1️⃣ التحقق من الاسم ورقم الجوال فقط
+  //   const name = bookingData.customerName?.trim();
+  //   const phone = bookingData.customerPhone?.trim();
 
-    if (!name) {
-      toast.error("يرجى إدخال الاسم");
-      return;
-    }
-    if (!phone) {
-      toast.error("يرجى إدخال رقم الجوال");
-      return;
-    }
+  //   if (!name) {
+  //     toast.error("يرجى إدخال الاسم");
+  //     return;
+  //   }
+  //   if (!phone) {
+  //     toast.error("يرجى إدخال رقم الجوال");
+  //     return;
+  //   }
 
-    // 2️⃣ لو الهوية متحقق منها بالفعل
-    if (isIdentityVerified) {
-      toast.success("✓ تم التحقق من هويتك بالفعل");
-      return;
-    }
+  //   // 2️⃣ لو الهوية متحقق منها بالفعل
+  //   if (isIdentityVerified) {
+  //     toast.success("✓ تم التحقق من هويتك بالفعل");
+  //     return;
+  //   }
 
-    // ✅ ابدأ حالة "جاري التحقق"
-    setIsVerifying(true);
+  //   // ✅ ابدأ حالة "جاري التحقق"
+  //   setIsVerifying(true);
 
-    try {
-      // 3️⃣ إرسال OTP فقط (بدون register)
-      if (!isOTPSent) {
-        const sent = await handleSendOTP();
-        if (!sent) {
-          toast.error("فشل إرسال رمز التحقق");
-          setIsVerifying(false);
+  //   try {
+  //     // 3️⃣ إرسال OTP فقط (بدون register)
+  //     if (!isOTPSent) {
+  //       const sent = await handleSendOTP();
+  //       if (!sent) {
+  //         toast.error("فشل إرسال رمز التحقق");
+  //         setIsVerifying(false);
+  //         return;
+  //       }
+  //     } else {
+  //       // لو OTP مرسل بالفعل، افتح البوب اب
+  //       setIsOTPPopupOpen(true);
+  //     }
+  //     // ⚠️ ملاحظة: لا نغلق isVerifying هنا لأننا مستنيين المستخدم يدخل الكود
+  //     // هيتم إغلاقها في handleVerifyOTPFromPopup بعد النجاح
+  //   } catch (error) {
+  //     console.error(error);
+  //     setIsVerifying(false);
+  //   }
+  // };
+  //39 error message
+  // ✅ دالة التحقق من الهوية (OTP أولاً ثم Register) - للزر الأول
+// ✅ دالة التحقق من الهوية (OTP أولاً ثم Register) - للزر الأول
+const handleVerifyIdentity = async () => {
+  // 1️⃣ التحقق من الاسم ورقم الجوال فقط
+  const name = bookingData.customerName?.trim();
+  const phone = bookingData.customerPhone?.trim();
+
+  if (!name) {
+    toast.error("يرجى إدخال الاسم");
+    return;
+  }
+  if (!phone) {
+    toast.error("يرجى إدخال رقم الجوال");
+    return;
+  }
+
+  // 2️⃣ لو الهوية متحقق منها بالفعل
+  if (isIdentityVerified) {
+    toast.success("✓ تم التحقق من هويتك بالفعل");
+    return;
+  }
+
+  // ✅ ابدأ حالة "جاري التحقق"
+  setIsVerifying(true);
+
+  try {
+    // 3️⃣ إرسال OTP (إلا لو مرسل بالفعل)
+    if (!isOTPSent) {
+      const result = await handleSendOTP();
+
+      // ✅ لو فشل بسبب reCAPTCHA (-39) → نكمل بالـ register فقط
+      if (!result.success) {
+        const isCaptchaError =
+          result.errorCode?.includes("-39") ||
+          result.errorCode?.includes("captcha") ||
+          result.errorCode?.includes("invalid-app-credential");
+
+        if (isCaptchaError) {
+          console.warn("⚠️ Captcha error - falling back to register only");
+
+          // ✅ نعمل register مباشرة
+          const registered = await handleRegisterUser();
+
+          if (registered) {
+            setIsIdentityVerified(true);
+            setIsVerifying(false);
+            toast.success("✓ تم تسجيل حسابك بنجاح");
+          } else {
+            toast.error("فشل تسجيل الحساب. حاول مرة أخرى.");
+            setIsVerifying(false);
+          }
           return;
         }
-      } else {
-        // لو OTP مرسل بالفعل، افتح البوب اب
-        setIsOTPPopupOpen(true);
+
+        // لو خطأ تاني → نوقف
+        toast.error("فشل إرسال رمز التحقق");
+        setIsVerifying(false);
+        return;
       }
-      // ⚠️ ملاحظة: لا نغلق isVerifying هنا لأننا مستنيين المستخدم يدخل الكود
-      // هيتم إغلاقها في handleVerifyOTPFromPopup بعد النجاح
-    } catch (error) {
-      console.error(error);
-      setIsVerifying(false);
+
+      // OTP اتبعت بنجاح → البوب اب هيفتح من handleSendOTP
+    } else {
+      // OTP مرسل بالفعل → نفتح البوب اب
+      setIsOTPPopupOpen(true);
     }
-  };
+  } catch (error) {
+    console.error(error);
+    toast.error("حدث خطأ غير متوقع");
+    setIsVerifying(false);
+  }
+};
 
   // معالج الضغط على زر الحجز - للزر الثاني
   const handleSubmit = async (e: React.FormEvent) => {

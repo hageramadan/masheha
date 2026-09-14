@@ -59,44 +59,88 @@ export const usePhoneAuth = () => {
   }
 };
 
-  const sendOTP = async (phone: string) => {
-    if (!phone) {
-      toast.error('يرجى إدخال رقم الجوال');
-      return false;
+  // const sendOTP = async (phone: string) => {
+  //   if (!phone) {
+  //     toast.error('يرجى إدخال رقم الجوال');
+  //     return false;
+  //   }
+
+  //   setIsLoading(true);
+  //   try {
+  //     const verifier = setupRecaptcha();
+  //     if (!verifier) {
+  //       toast.error('حدث خطأ في تهيئة التحقق');
+  //       return false;
+  //     }
+
+  //     // ✅ مهم: في الـ invisible mode، لازم تستدعي render قبل signIn
+  //     // (Firebase بيعملها تلقائيًا في معظم الحالات لكن لو حصل مشكلة)
+  //     await verifier.render();
+
+  //     const confirmation = await signInWithPhoneNumber(auth, phone, verifier);
+  //     setConfirmationResult(confirmation);
+  //     setIsOTPSent(true);
+  //     return true;
+  //   } catch (error: any) {
+  //     if (error.code === 'auth/invalid-phone-number') {
+  //       toast.error('رقم الجوال غير صحيح');
+  //     } else if (error.code === 'auth/too-many-requests') {
+  //       toast.error('طلبات كثيرة، حاول لاحقاً');
+  //     } else if (error.code === 'auth/invalid-app-credential') {
+  //       toast.error('❌ خطأ في المصادقة. تأكد من API Key');
+  //     } else {
+  //       toast.error(error.message || 'فشل إرسال رمز التحقق');
+  //     }
+  //     return false;
+  //   } finally {
+  //     setIsLoading(false);
+  //   }
+  // };
+const sendOTP = async (
+  phone: string,
+): Promise<{ success: boolean; errorCode?: string }> => {
+  if (!phone) {
+    toast.error("يرجى إدخال رقم الجوال");
+    return { success: false, errorCode: "empty-phone" };
+  }
+
+  setIsLoading(true);
+  try {
+    const verifier = setupRecaptcha();
+    if (!verifier) {
+      toast.error("حدث خطأ في تهيئة التحقق");
+      return { success: false, errorCode: "recaptcha-setup-failed" };
     }
 
-    setIsLoading(true);
-    try {
-      const verifier = setupRecaptcha();
-      if (!verifier) {
-        toast.error('حدث خطأ في تهيئة التحقق');
-        return false;
-      }
+    await verifier.render();
 
-      // ✅ مهم: في الـ invisible mode، لازم تستدعي render قبل signIn
-      // (Firebase بيعملها تلقائيًا في معظم الحالات لكن لو حصل مشكلة)
-      await verifier.render();
+    const confirmation = await signInWithPhoneNumber(auth, phone, verifier);
+    setConfirmationResult(confirmation);
+    setIsOTPSent(true);
+    return { success: true };
+  } catch (error: any) {
+    console.error("❌ Send OTP error:", error);
 
-      const confirmation = await signInWithPhoneNumber(auth, phone, verifier);
-      setConfirmationResult(confirmation);
-      setIsOTPSent(true);
-      return true;
-    } catch (error: any) {
-      if (error.code === 'auth/invalid-phone-number') {
-        toast.error('رقم الجوال غير صحيح');
-      } else if (error.code === 'auth/too-many-requests') {
-        toast.error('طلبات كثيرة، حاول لاحقاً');
-      } else if (error.code === 'auth/invalid-app-credential') {
-        toast.error('❌ خطأ في المصادقة. تأكد من API Key');
-      } else {
-        toast.error(error.message || 'فشل إرسال رمز التحقق');
-      }
-      return false;
-    } finally {
-      setIsLoading(false);
+    const errorCode = error.code || error.message || "unknown";
+
+    if (error.code === "auth/invalid-phone-number") {
+      toast.error("رقم الجوال غير صحيح");
+    } else if (error.code === "auth/too-many-requests") {
+      toast.error("طلبات كثيرة، حاول لاحقاً");
+    } else if (error.code === "auth/invalid-app-credential") {
+      toast.error("❌ خطأ في المصادقة. تأكد من API Key");
+    } else if (errorCode.includes("-39") || errorCode.includes("captcha")) {
+      // ⚠️ خطأ reCAPTCHA - منعرضش رسالة
+      console.warn("⚠️ reCAPTCHA error detected:", errorCode);
+    } else {
+      toast.error(error.message || "فشل إرسال رمز التحقق");
     }
-  };
 
+    return { success: false, errorCode };
+  } finally {
+    setIsLoading(false);
+  }
+};
   const verifyOTP = async (code: string) => {
     if (!code || code.length < 6) {
       toast.error('يرجى إدخال رمز التحقق المكون من 6 أرقام');
