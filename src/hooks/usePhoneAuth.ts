@@ -1,22 +1,32 @@
 // src/hooks/usePhoneAuth.ts
-import { useState, useEffect } from 'react';
-import { 
-  signInWithPhoneNumber, 
+import { useState } from 'react';
+import {
+  signInWithPhoneNumber,
   RecaptchaVerifier,
   ConfirmationResult,
+  Auth,
 } from 'firebase/auth';
 import { auth } from '@/src/lib/firebase';
 import toast from 'react-hot-toast';
 
+// ✅ أضف تعريف للـ window
+declare global {
+  interface Window {
+    recaptchaVerifier: RecaptchaVerifier | null;
+    confirmationResult: ConfirmationResult | null;
+  }
+}
+
 export const usePhoneAuth = () => {
-  const [confirmationResult, setConfirmationResult] = useState<ConfirmationResult | null>(null);
+  const [confirmationResult, setConfirmationResult] =
+    useState<ConfirmationResult | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [isOTPSent, setIsOTPSent] = useState(false);
 
-  // تهيئة reCAPTCHA
-  const setupRecaptcha = () => {
+  // ✅ تهيئة reCAPTCHA غير مرئي
+  const setupRecaptcha = (): RecaptchaVerifier | null => {
     if (typeof window === 'undefined') return null;
-    
+
     try {
       // تنظيف أي reCAPTCHA قديم
       if (window.recaptchaVerifier) {
@@ -28,11 +38,18 @@ export const usePhoneAuth = () => {
         window.recaptchaVerifier = null;
       }
 
-      // إنشاء reCAPTCHA جديد مع إعدادات واضحة
+      // ✅ تأكد إن الـ container موجود
+      const container = document.getElementById('recaptcha-container');
+      if (!container) {
+        console.error('❌ recaptcha-container not found in DOM');
+        return null;
+      }
+
+      // ✅ الحل: size: 'invisible' بدل 'visible'
       const verifier = new RecaptchaVerifier(auth, 'recaptcha-container', {
-        size: 'visible', // جرب visible بدل invisible
+        size: 'invisible', // 🔑 ده اللي يخفيها
         callback: () => {
-          console.log('reCAPTCHA solved');
+          console.log('✅ reCAPTCHA solved silently');
         },
         'expired-callback': () => {
           console.log('⏰ reCAPTCHA expired');
@@ -56,30 +73,27 @@ export const usePhoneAuth = () => {
 
     setIsLoading(true);
     try {
-      // تهيئة reCAPTCHA
       const verifier = setupRecaptcha();
       if (!verifier) {
         toast.error('حدث خطأ في تهيئة التحقق');
         return false;
       }
-      
-      // console.log('📤 Sending OTP to:', phone);
-      
+
+      // ✅ مهم: في الـ invisible mode، لازم تستدعي render قبل signIn
+      // (Firebase بيعملها تلقائيًا في معظم الحالات لكن لو حصل مشكلة)
+      await verifier.render();
+
       const confirmation = await signInWithPhoneNumber(auth, phone, verifier);
       setConfirmationResult(confirmation);
       setIsOTPSent(true);
-      // toast.success('تم إرسال رمز التحقق إلى جوالك');
       return true;
     } catch (error: any) {
-      // console.error('❌ Send OTP error:', error);
-      
       if (error.code === 'auth/invalid-phone-number') {
         toast.error('رقم الجوال غير صحيح');
       } else if (error.code === 'auth/too-many-requests') {
         toast.error('طلبات كثيرة، حاول لاحقاً');
       } else if (error.code === 'auth/invalid-app-credential') {
         toast.error('❌ خطأ في المصادقة. تأكد من API Key');
-        console.error('🔑 تأكد من API Key في Firebase Console > Project Settings > Your apps > masheha-web');
       } else {
         toast.error(error.message || 'فشل إرسال رمز التحقق');
       }
@@ -103,10 +117,8 @@ export const usePhoneAuth = () => {
     setIsLoading(true);
     try {
       const result = await confirmationResult.confirm(code);
-      // toast.success('تم التحقق بنجاح');
       return result.user;
     } catch (error: any) {
-      console.error('❌ Verify OTP error:', error);
       if (error.code === 'auth/invalid-verification-code') {
         toast.error('رمز التحقق غير صحيح');
       } else if (error.code === 'auth/too-many-requests') {

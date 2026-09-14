@@ -156,9 +156,9 @@ export default function PaymentPopup({
 
                   {/* الدائرة */}
                   <div className={cn(
-                    "w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all duration-200 shrink-0",
+                    "w-5 h-5 rounded-full  flex items-center justify-center transition-all duration-200 shrink-0",
                     isSelected
-                      ? "border-primary bg-primary"
+                      ? "border-[#4b398e] bg-[#4b398e]"
                       : "border-gray-300 bg-white"
                   )}>
                     {isSelected && (

@@ -534,20 +534,47 @@ export default function BookingForm({
     return false;
   };
 
-  // 3️⃣ التحقق من OTP (من البوب اب)
+  // 3️⃣ ✅ التحقق من OTP (من البوب اب) - وبعدها Register
   const handleVerifyOTPFromPopup = async (code: string): Promise<boolean> => {
-    const user = await verifyOTP(code);
-    if (user) {
+    // 1️⃣ التحقق من الكود أولاً عبر Firebase
+    const firebaseUser = await verifyOTP(code);
+
+    if (!firebaseUser) {
+      // ❌ فشل التحقق من الكود - لا نعمل register
+      return false;
+    }
+
+    // 2️⃣ ✅ تم التحقق من الكود بنجاح - الآن نسجل المستخدم في الـ Backend
+    try {
+      if (!isUserRegistered && !isAuthenticated) {
+        const registered = await handleRegisterUser();
+
+        if (!registered) {
+          toast.error(
+            "تم التحقق من الجوال لكن فشل تسجيل الحساب. حاول مرة أخرى.",
+          );
+          // ⚠️ نحتفظ بحالة التحقق من Firebase لكن لا نكمل
+          setIsPhoneVerified(true);
+          setIsVerifying(false);
+          return false;
+        }
+      }
+
+      // 3️⃣ كل حاجة نجحت
       setIsPhoneVerified(true);
       setIsIdentityVerified(true); // ✅ تم التحقق من الهوية بالكامل
       setShowOTPInput(false);
       setIsOTPPopupOpen(false);
-      setIsVerifying(false); // ✅ أوقف حالة "جاري التحقق" بعد النجاح
+      setIsVerifying(false); // ✅ أوقف حالة "جاري التحقق"
       toast.success("✓ تم التحقق من هويتك بنجاح");
       // ⚠️ لا ننفذ submit هنا - المستخدم يضغط زر الحجز بنفسه
       return true;
+    } catch (error) {
+      console.error("Register after OTP error:", error);
+      toast.error("حدث خطأ أثناء تسجيل الحساب");
+      setIsVerifying(false);
+      return false;
     }
-    return false;
   };
 
   // دالة إعادة إرسال OTP
@@ -565,7 +592,7 @@ export default function BookingForm({
     }
   };
 
-  // ✅ دالة التحقق من الهوية (Register + OTP) - للزر الأول
+  // ✅ دالة التحقق من الهوية (OTP أولاً ثم Register) - للزر الأول
   const handleVerifyIdentity = async () => {
     // 1️⃣ التحقق من الاسم ورقم الجوال فقط
     const name = bookingData.customerName?.trim();
@@ -586,21 +613,11 @@ export default function BookingForm({
       return;
     }
 
-    // ✅ ابدأ حالة "جاري التحقق" من أول ما يضغط المستخدم
+    // ✅ ابدأ حالة "جاري التحقق"
     setIsVerifying(true);
 
     try {
-      // 3️⃣ تسجيل المستخدم في Backend (لو مش مسجل)
-      if (!isUserRegistered && !isAuthenticated) {
-        const registered = await handleRegisterUser();
-        if (!registered) {
-          toast.error("فشل تسجيل المستخدم");
-          setIsVerifying(false);
-          return;
-        }
-      }
-
-      // 4️⃣ إرسال OTP وفتح البوب اب
+      // 3️⃣ إرسال OTP فقط (بدون register)
       if (!isOTPSent) {
         const sent = await handleSendOTP();
         if (!sent) {
@@ -1222,8 +1239,18 @@ export default function BookingForm({
             rentalType={rentalType}
           />
 
-          {/* حاوية reCAPTCHA */}
-          <div id="recaptcha-container"></div>
+          {/* حاوية reCAPTCHA - مخفية بصريًا لكن موجودة في DOM */}
+          <div
+            id="recaptcha-container"
+            style={{
+              position: "absolute",
+              width: 0,
+              height: 0,
+              overflow: "hidden",
+              opacity: 0,
+              pointerEvents: "none",
+            }}
+          />
 
           <button
             type="submit"
