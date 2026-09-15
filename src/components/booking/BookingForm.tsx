@@ -1381,7 +1381,7 @@ const handleVerifyIdentity = async () => {
           {/* رسالة توضيحية لو لم يتم التحقق */}
           {!isIdentityVerified && !isAuthenticated && (
             <p className="text-xs text-center text-amber-600">
-              ⚠️ يرجى التحقق من هويتك أولاً لتفعيل زر الحجز
+              ⚠️ يرجى التحقق من رقم الجوال  لتفعيل زر الحجز
             </p>
           )}
 
