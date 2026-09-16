@@ -71,7 +71,7 @@ export default function BookingForm({
 
   const { user, isAuthenticated, register } = useAuth();
 
-  const {
+    const {
     bookingData,
     errors,
     isSubmitting,
@@ -84,6 +84,9 @@ export default function BookingForm({
     submit,
     resetForm,
     setPeriodId,
+    validateMonthlyPeriod,
+    monthlyPeriods,
+    availableMonthsData,
   } = useBookingForm(
     carId,
     car?.pricePerDay || 0,
@@ -868,38 +871,86 @@ const handleVerifyIdentity = async () => {
   };
 
   // ✅ دوال التحكم في عدد الأشهر (للحجز الشهري)
-  const incrementMonths = () => {
+   const incrementMonths = () => {
     const newMonths = (rentalMonths || 1) + 1;
-    setRentalMonths(newMonths);
-    // تحديث عدد الأيام بناءً على عدد الأشهر (شهر = 30 يوم)
-    const newDays = newMonths * 30;
-    updateField("rentalDays", newDays);
-  };
 
-  const decrementMonths = () => {
-    const currentMonths = rentalMonths || 1;
-    if (currentMonths > 1) {
-      const newMonths = currentMonths - 1;
-      setRentalMonths(newMonths);
-      // تحديث عدد الأيام بناءً على عدد الأشهر (شهر = 30 يوم)
-      const newDays = newMonths * 30;
-      updateField("rentalDays", newDays);
-    } else {
-      toast.error("الحد الأدنى للحجز هو شهر واحد");
+    const validation = validateMonthlyPeriod(newMonths);
+
+    if (!validation.isValid) {
+      toast.error(validation.message, {
+        duration: 5000,
+        position: "top-center",
+      });
+      return;
+    }
+
+    setRentalMonths(newMonths);
+    updateField("rentalDays", newMonths * 30);
+
+    if (validation.periodId) {
+      setPeriodId(validation.periodId);
     }
   };
 
-  const handleMonthsChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const decrementMonths = () => {
+    const currentMonths = rentalMonths || 1;
+    const newMonths = currentMonths - 1;
+
+    const validation = validateMonthlyPeriod(newMonths);
+
+    if (!validation.isValid) {
+      toast.error(validation.message, {
+        duration: 5000,
+        position: "top-center",
+      });
+      return;
+    }
+
+    if (currentMonths > 1) {
+      setRentalMonths(newMonths);
+      updateField("rentalDays", newMonths * 30);
+
+      if (validation.periodId) {
+        setPeriodId(validation.periodId);
+      }
+    }
+  };
+
+      const handleMonthsChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = parseInt(e.target.value);
-    if (!isNaN(value) && value >= 1) {
-      setRentalMonths(value);
-      // تحديث عدد الأيام بناءً على عدد الأشهر (شهر = 30 يوم)
-      const newDays = value * 30;
-      updateField("rentalDays", newDays);
-    } else if (!isNaN(value) && value < 1) {
-      toast.error("الحد الأدنى للحجز هو شهر واحد");
-      setRentalMonths(1);
-      updateField("rentalDays", 30);
+    if (isNaN(value)) return;
+
+    const validation = validateMonthlyPeriod(value);
+
+    if (!validation.isValid) {
+      toast.error(validation.message, {
+        duration: 5000,
+        position: "top-center",
+      });
+
+      // ✅ إعادة تعيين لأقرب قيمة صحيحة
+      if (validation.periodId) {
+        const period = monthlyPeriods.find(
+          (p) => p.id === validation.periodId,
+        );
+        if (period) {
+          const fallbackMonths = Math.max(
+            1,
+            Math.round(period.days_count / 30),
+          );
+          setRentalMonths(fallbackMonths);
+          updateField("rentalDays", period.days_count);
+          setPeriodId(period.id);
+        }
+      }
+      return;
+    }
+
+    setRentalMonths(value);
+    updateField("rentalDays", value * 30);
+
+    if (validation.periodId) {
+      setPeriodId(validation.periodId);
     }
   };
 

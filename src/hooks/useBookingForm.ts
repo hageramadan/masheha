@@ -206,6 +206,7 @@ export const useBookingForm = (
   rentalCompanyId?: number,
   bookingType: "daily" | "monthly" = "daily",
   carName?: string,
+   periods: any[] = [],
 ) => {
   const { token, isAuthenticated } = useAuth();
   const router = useRouter();
@@ -230,8 +231,124 @@ export const useBookingForm = (
   );
   const [isCalculating, setIsCalculating] = useState(false);
 
-  // تخزين الـ period_id المختار (للحجز الشهري)
+   // تخزين الـ period_id المختار (للحجز الشهري)
   const [selectedPeriodId, setSelectedPeriodId] = useState<number | null>(null);
+
+  // ✅ الفترات الشهرية المتاحة + الأشهر
+  const [monthlyPeriods, setMonthlyPeriods] = useState<any[]>(periods);
+  const [availableMonthsData, setAvailableMonthsData] = useState<any[]>([]);
+
+  // ✅ جلب الفترات من الـ API مباشرة
+  useEffect(() => {
+    const fetchMonthlyPeriods = async () => {
+      if (bookingType !== "monthly" || !rentalCompanyId) return;
+
+      try {
+        const carIdNum = parseInt(carId);
+        const data = await CarService.getAvailablePeriods(
+          carIdNum,
+          rentalCompanyId,
+          "monthly",
+        );
+
+        if (data?.available_months?.length) {
+          // ✅ خزّن الأشهر كاملة
+          setAvailableMonthsData(data.available_months);
+
+          // ✅ استخرج الفترات الفريدة (unique periods)
+          const uniquePeriods = new Map<number, any>();
+          data.available_months.forEach((month: any) => {
+            month.available_periods?.forEach((p: any) => {
+              if (!uniquePeriods.has(p.id)) {
+                uniquePeriods.set(p.id, p);
+              }
+            });
+          });
+
+          const periodsList = Array.from(uniquePeriods.values());
+          setMonthlyPeriods(periodsList);
+
+          console.log("📅 Monthly Periods:", periodsList);
+        }
+      } catch (error) {
+        console.error("❌ Error fetching monthly periods:", error);
+      }
+    };
+
+    fetchMonthlyPeriods();
+  }, [carId, rentalCompanyId, bookingType]);
+
+  useEffect(() => {
+    if (periods && periods.length > 0) {
+      setMonthlyPeriods(periods);
+    }
+  }, [periods]);
+
+  // ✅ دالة التحقق من الفترة الشهرية المسموح بها
+  // const validateMonthlyPeriod = useCallback(
+  //   (
+  //     requestedMonths: number,
+  //   ): { isValid: boolean; message: string; periodId?: number } => {
+  //     if (bookingType !== "monthly") {
+  //       return { isValid: true, message: "" };
+  //     }
+
+  //     if (requestedMonths < 1) {
+  //       return {
+  //         isValid: false,
+  //         message: "الحد الأدنى للحجز الشهري هو شهر واحد",
+  //       };
+  //     }
+
+  //     if (!monthlyPeriods || monthlyPeriods.length === 0) {
+  //       return { isValid: true, message: "" };
+  //     }
+
+  //     // ترتيب الفترات حسب عدد الأيام
+  //     const sortedPeriods = [...monthlyPeriods].sort(
+  //       (a, b) => (a.days_count || 0) - (b.days_count || 0),
+  //     );
+
+  //     const requestedDays = requestedMonths * 30;
+
+  //     // الحد الأدنى
+  //     const minPeriod = sortedPeriods[0];
+  //     const minMonths = Math.max(1, Math.round(minPeriod.days_count / 30));
+  //     if (requestedMonths < minMonths) {
+  //       return {
+  //         isValid: false,
+  //         message: `الحد الأدنى للحجز الشهري هو ${minMonths} ${
+  //           minMonths === 1 ? "شهر" : "أشهر"
+  //         } (${minPeriod.days_count} يوم)`,
+  //         periodId: minPeriod.id,
+  //       };
+  //     }
+
+  //     // البحث عن الفترة المطابقة
+  //     const matchingPeriod = sortedPeriods.find(
+  //       (p) => requestedDays <= p.days_count,
+  //     );
+
+  //     if (!matchingPeriod) {
+  //       const maxPeriod = sortedPeriods[sortedPeriods.length - 1];
+  //       const maxMonths = Math.max(1, Math.round(maxPeriod.days_count / 30));
+  //       return {
+  //         isValid: false,
+  //         message: `أقصى فترة متاحة للحجز هي ${maxMonths} ${
+  //           maxMonths === 1 ? "شهر" : "أشهر"
+  //         } (${maxPeriod.days_count} يوم)`,
+  //         periodId: maxPeriod.id,
+  //       };
+  //     }
+
+  //     return {
+  //       isValid: true,
+  //       message: "",
+  //       periodId: matchingPeriod.id,
+  //     };
+  //   },
+  //   [bookingType, monthlyPeriods],
+  // );
 
   // Load Services
   useEffect(() => {
@@ -334,7 +451,71 @@ export const useBookingForm = (
     bookingData.selectedServices,
     calculatePrice,
   ]);
+  // ✅ دالة التحقق من الفترة الشهرية المسموح بها
+  const validateMonthlyPeriod = useCallback(
+    (
+      requestedMonths: number,
+    ): { isValid: boolean; message: string; periodId?: number } => {
+      if (bookingType !== "monthly") {
+        return { isValid: true, message: "" };
+      }
 
+      if (requestedMonths < 1) {
+        return {
+          isValid: false,
+          message: "الحد الأدنى للحجز الشهري هو شهر واحد",
+        };
+      }
+
+      if (!monthlyPeriods || monthlyPeriods.length === 0) {
+        return { isValid: true, message: "" };
+      }
+
+      // ✅ ترتيب الفترات حسب عدد الأيام
+      const sortedPeriods = [...monthlyPeriods].sort(
+        (a, b) => (a.days_count || 0) - (b.days_count || 0),
+      );
+
+      const requestedDays = requestedMonths * 30;
+
+      // ✅ الحد الأدنى
+      const minPeriod = sortedPeriods[0];
+      const minMonths = Math.max(1, Math.round(minPeriod.days_count / 30));
+      if (requestedMonths < minMonths) {
+        return {
+          isValid: false,
+          message: `الحد الأدنى للحجز الشهري هو ${minMonths} ${
+            minMonths === 1 ? "شهر" : "أشهر"
+          } (${minPeriod.days_count} يوم)`,
+          periodId: minPeriod.id,
+        };
+      }
+
+      // ✅ البحث عن الفترة المطابقة
+      const matchingPeriod = sortedPeriods.find(
+        (p) => requestedDays <= p.days_count,
+      );
+
+      if (!matchingPeriod) {
+        const maxPeriod = sortedPeriods[sortedPeriods.length - 1];
+        const maxMonths = Math.max(1, Math.round(maxPeriod.days_count / 30));
+        return {
+          isValid: false,
+          message: `أقصى فترة متاحة للحجز هي ${maxMonths} ${
+            maxMonths === 1 ? "شهر" : "أشهر"
+          } (${maxPeriod.days_count} يوم)`,
+          periodId: maxPeriod.id,
+        };
+      }
+
+      return {
+        isValid: true,
+        message: "",
+        periodId: matchingPeriod.id,
+      };
+    },
+    [bookingType, monthlyPeriods],
+  );
   // Calculate services total from API response or local
   const servicesTotal = useMemo(() => {
     if (priceData) {
@@ -683,5 +864,8 @@ export const useBookingForm = (
     resetForm,
     setPeriodId,
     selectedPeriodId,
+     validateMonthlyPeriod, 
+    monthlyPeriods, 
+      availableMonthsData, 
   };
 };
