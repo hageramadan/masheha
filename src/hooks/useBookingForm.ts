@@ -3,6 +3,7 @@
 
 import { useState, useCallback, useMemo, useEffect } from "react";
 import { useRouter } from "next/navigation";
+
 import { BookingData, AdditionalService } from "@/src/types/booking";
 import {
   calculateBookingTotal,
@@ -33,15 +34,14 @@ interface ExtendedTotals {
 
 // ✅ دالة مساعدة لفك ترميز Unicode escape sequences
 const decodeUnicode = (str: string): string => {
-  if (!str || typeof str !== 'string') return str;
-  
-  // إذا كان النص يحتوي على \u
-  if (str.includes('\\u')) {
+  if (!str || typeof str !== "string") return str;
+
+  if (str.includes("\\u")) {
     try {
       return JSON.parse(`"${str}"`);
     } catch {
       try {
-        return decodeURIComponent(str.replace(/\\u/g, '%u'));
+        return decodeURIComponent(str.replace(/\\u/g, "%u"));
       } catch {
         return str.replace(/\\u([0-9a-fA-F]{4})/g, (_, hex) => {
           return String.fromCharCode(parseInt(hex, 16));
@@ -49,49 +49,41 @@ const decodeUnicode = (str: string): string => {
       }
     }
   }
-  
+
   return str;
 };
 
 // ✅ دالة استخراج الرسالة من أي نوع من الأخطاء
 const extractErrorMessage = (error: any): string => {
-  // 1️⃣ إذا كان الخطأ نصاً
-  if (typeof error === 'string') {
+  if (typeof error === "string") {
     return decodeUnicode(error);
   }
 
-  // 2️⃣ إذا كان الخطأ كائن له errors.start_time مباشرة
   if (error?.errors?.start_time && Array.isArray(error.errors.start_time)) {
     const timeError = error.errors.start_time[0];
-    if (typeof timeError === 'string') {
+    if (typeof timeError === "string") {
       return decodeUnicode(timeError);
     }
     return String(timeError);
   }
 
-  // 3️⃣ إذا كان الخطأ كائن له message
   if (error?.message) {
-    // إذا كانت الرسالة كائن
-    if (typeof error.message === 'object' && error.message !== null) {
-      // محاولة استخراج الرسالة من الكائن
+    if (typeof error.message === "object" && error.message !== null) {
       if (error.message.errors?.start_time?.[0]) {
         return decodeUnicode(error.message.errors.start_time[0]);
       }
       if (error.message.message) {
         return decodeUnicode(error.message.message);
       }
-      // محاولة تحويل الكائن إلى نص
       const jsonStr = JSON.stringify(error.message);
-      // محاولة استخراج الرسالة من النص
       const match = jsonStr.match(/"message":"([^"]*)"/);
       if (match) {
         return decodeUnicode(match[1]);
       }
       return decodeUnicode(jsonStr);
     }
-    
-    if (typeof error.message === 'string') {
-      // محاولة استخراج الرسالة من النص إذا كان يحتوي على JSON
+
+    if (typeof error.message === "string") {
       if (error.message.includes('{"message"')) {
         try {
           const parsed = JSON.parse(error.message);
@@ -102,7 +94,6 @@ const extractErrorMessage = (error: any): string => {
             return decodeUnicode(parsed.errors.start_time[0]);
           }
         } catch {
-          // إذا فشل الـ parse، نبحث بالـ regex
           const match = error.message.match(/"message":"([^"]*)"/);
           if (match) {
             return decodeUnicode(match[1]);
@@ -114,48 +105,45 @@ const extractErrorMessage = (error: any): string => {
     return String(error.message);
   }
 
-  // 4️⃣ إذا كان الخطأ له response.data (من axios)
   if (error?.response?.data) {
     const data = error.response.data;
-    
+
     if (data.errors?.start_time && Array.isArray(data.errors.start_time)) {
       const timeError = data.errors.start_time[0];
-      if (typeof timeError === 'string') {
+      if (typeof timeError === "string") {
         return decodeUnicode(timeError);
       }
       return String(timeError);
     }
 
     if (data.message) {
-      if (typeof data.message === 'string') {
+      if (typeof data.message === "string") {
         return decodeUnicode(data.message);
       }
       return String(data.message);
     }
   }
 
-  // 5️⃣ إذا كان الخطأ له data مباشرة
   if (error?.data) {
     const data = error.data;
-    
+
     if (data.errors?.start_time && Array.isArray(data.errors.start_time)) {
       const timeError = data.errors.start_time[0];
-      if (typeof timeError === 'string') {
+      if (typeof timeError === "string") {
         return decodeUnicode(timeError);
       }
       return String(timeError);
     }
 
     if (data.message) {
-      if (typeof data.message === 'string') {
+      if (typeof data.message === "string") {
         return decodeUnicode(data.message);
       }
       return String(data.message);
     }
   }
 
-  // 6️⃣ محاولة استخراج الرسالة من أي كائن باستخدام regex
-  if (error && typeof error === 'object') {
+  if (error && typeof error === "object") {
     const jsonStr = JSON.stringify(error);
     const match = jsonStr.match(/"message":"([^"]*)"/);
     if (match) {
@@ -167,11 +155,9 @@ const extractErrorMessage = (error: any): string => {
     }
   }
 
-  // 7️⃣ الحالة الافتراضية
-  return error?.toString?.() || 'حدث خطأ غير متوقع';
+  return error?.toString?.() || "حدث خطأ غير متوقع";
 };
 
-// ✅ دالة parseErrorMessage المبسطة (للتوافق مع الكود القديم)
 const parseErrorMessage = (error: any): string => {
   return extractErrorMessage(error);
 };
@@ -206,7 +192,7 @@ export const useBookingForm = (
   rentalCompanyId?: number,
   bookingType: "daily" | "monthly" = "daily",
   carName?: string,
-   periods: any[] = [],
+  periods: any[] = [],
 ) => {
   const { token, isAuthenticated } = useAuth();
   const router = useRouter();
@@ -231,53 +217,15 @@ export const useBookingForm = (
   );
   const [isCalculating, setIsCalculating] = useState(false);
 
-   // تخزين الـ period_id المختار (للحجز الشهري)
+  // تخزين الـ period_id المختار (للحجز الشهري)
   const [selectedPeriodId, setSelectedPeriodId] = useState<number | null>(null);
 
   // ✅ الفترات الشهرية المتاحة + الأشهر
+  // ⚠️ بنستقبلها من BookingForm مباشرة (مفيش fetch مكرر)
   const [monthlyPeriods, setMonthlyPeriods] = useState<any[]>(periods);
   const [availableMonthsData, setAvailableMonthsData] = useState<any[]>([]);
 
-  // ✅ جلب الفترات من الـ API مباشرة
-  useEffect(() => {
-    const fetchMonthlyPeriods = async () => {
-      if (bookingType !== "monthly" || !rentalCompanyId) return;
-
-      try {
-        const carIdNum = parseInt(carId);
-        const data = await CarService.getAvailablePeriods(
-          carIdNum,
-          rentalCompanyId,
-          "monthly",
-        );
-
-        if (data?.available_months?.length) {
-          // ✅ خزّن الأشهر كاملة
-          setAvailableMonthsData(data.available_months);
-
-          // ✅ استخرج الفترات الفريدة (unique periods)
-          const uniquePeriods = new Map<number, any>();
-          data.available_months.forEach((month: any) => {
-            month.available_periods?.forEach((p: any) => {
-              if (!uniquePeriods.has(p.id)) {
-                uniquePeriods.set(p.id, p);
-              }
-            });
-          });
-
-          const periodsList = Array.from(uniquePeriods.values());
-          setMonthlyPeriods(periodsList);
-
-          console.log("📅 Monthly Periods:", periodsList);
-        }
-      } catch (error) {
-        console.error("❌ Error fetching monthly periods:", error);
-      }
-    };
-
-    fetchMonthlyPeriods();
-  }, [carId, rentalCompanyId, bookingType]);
-
+  // ✅ مزامنة الفترات لما تتغير
   useEffect(() => {
     if (periods && periods.length > 0) {
       setMonthlyPeriods(periods);
@@ -285,70 +233,68 @@ export const useBookingForm = (
   }, [periods]);
 
   // ✅ دالة التحقق من الفترة الشهرية المسموح بها
-  // const validateMonthlyPeriod = useCallback(
-  //   (
-  //     requestedMonths: number,
-  //   ): { isValid: boolean; message: string; periodId?: number } => {
-  //     if (bookingType !== "monthly") {
-  //       return { isValid: true, message: "" };
-  //     }
+  const validateMonthlyPeriod = useCallback(
+    (
+      requestedMonths: number,
+    ): { isValid: boolean; message: string; periodId?: number } => {
+      if (bookingType !== "monthly") {
+        return { isValid: true, message: "" };
+      }
 
-  //     if (requestedMonths < 1) {
-  //       return {
-  //         isValid: false,
-  //         message: "الحد الأدنى للحجز الشهري هو شهر واحد",
-  //       };
-  //     }
+      if (requestedMonths < 1) {
+        return {
+          isValid: false,
+          message: "الحد الأدنى للحجز الشهري هو شهر واحد",
+        };
+      }
 
-  //     if (!monthlyPeriods || monthlyPeriods.length === 0) {
-  //       return { isValid: true, message: "" };
-  //     }
+      if (!monthlyPeriods || monthlyPeriods.length === 0) {
+        return { isValid: true, message: "" };
+      }
 
-  //     // ترتيب الفترات حسب عدد الأيام
-  //     const sortedPeriods = [...monthlyPeriods].sort(
-  //       (a, b) => (a.days_count || 0) - (b.days_count || 0),
-  //     );
+      // ✅ ترتيب الفترات حسب عدد الأيام
+      const sortedPeriods = [...monthlyPeriods].sort(
+        (a, b) => (a.days_count || 0) - (b.days_count || 0),
+      );
 
-  //     const requestedDays = requestedMonths * 30;
+      const requestedDays = requestedMonths * 30;
 
-  //     // الحد الأدنى
-  //     const minPeriod = sortedPeriods[0];
-  //     const minMonths = Math.max(1, Math.round(minPeriod.days_count / 30));
-  //     if (requestedMonths < minMonths) {
-  //       return {
-  //         isValid: false,
-  //         message: `الحد الأدنى للحجز الشهري هو ${minMonths} ${
-  //           minMonths === 1 ? "شهر" : "أشهر"
-  //         } (${minPeriod.days_count} يوم)`,
-  //         periodId: minPeriod.id,
-  //       };
-  //     }
+      // ✅ الحد الأدنى
+      const minPeriod = sortedPeriods[0];
+      const minMonths = Math.max(1, Math.round(minPeriod.days_count / 30));
+      if (requestedMonths < minMonths) {
+        return {
+          isValid: false,
+          message: `الحد الأدنى للحجز الشهري هو ${minMonths} ${
+            minMonths === 1 ? "شهر" : "أشهر"
+          } (${minPeriod.days_count} يوم)`,
+          periodId: minPeriod.id,
+        };
+      }
 
-  //     // البحث عن الفترة المطابقة
-  //     const matchingPeriod = sortedPeriods.find(
-  //       (p) => requestedDays <= p.days_count,
-  //     );
+      // ✅ البحث عن الفترة المطابقة
+      const matchingPeriod = sortedPeriods.find(
+        (p) => requestedDays <= p.days_count,
+      );
 
-  //     if (!matchingPeriod) {
-  //       const maxPeriod = sortedPeriods[sortedPeriods.length - 1];
-  //       const maxMonths = Math.max(1, Math.round(maxPeriod.days_count / 30));
-  //       return {
-  //         isValid: false,
-  //         message: `أقصى فترة متاحة للحجز هي ${maxMonths} ${
-  //           maxMonths === 1 ? "شهر" : "أشهر"
-  //         } (${maxPeriod.days_count} يوم)`,
-  //         periodId: maxPeriod.id,
-  //       };
-  //     }
+      if (!matchingPeriod) {
+        const maxPeriod = sortedPeriods[sortedPeriods.length - 1];
+        const maxMonths = Math.max(1, Math.round(maxPeriod.days_count / 30));
+        return {
+          isValid: false,
+          message: `لا توجد فترات متاحه!`,
+          periodId: maxPeriod.id,
+        };
+      }
 
-  //     return {
-  //       isValid: true,
-  //       message: "",
-  //       periodId: matchingPeriod.id,
-  //     };
-  //   },
-  //   [bookingType, monthlyPeriods],
-  // );
+      return {
+        isValid: true,
+        message: "",
+        periodId: matchingPeriod.id,
+      };
+    },
+    [bookingType, monthlyPeriods],
+  );
 
   // Load Services
   useEffect(() => {
@@ -451,71 +397,7 @@ export const useBookingForm = (
     bookingData.selectedServices,
     calculatePrice,
   ]);
-  // ✅ دالة التحقق من الفترة الشهرية المسموح بها
-  const validateMonthlyPeriod = useCallback(
-    (
-      requestedMonths: number,
-    ): { isValid: boolean; message: string; periodId?: number } => {
-      if (bookingType !== "monthly") {
-        return { isValid: true, message: "" };
-      }
 
-      if (requestedMonths < 1) {
-        return {
-          isValid: false,
-          message: "الحد الأدنى للحجز الشهري هو شهر واحد",
-        };
-      }
-
-      if (!monthlyPeriods || monthlyPeriods.length === 0) {
-        return { isValid: true, message: "" };
-      }
-
-      // ✅ ترتيب الفترات حسب عدد الأيام
-      const sortedPeriods = [...monthlyPeriods].sort(
-        (a, b) => (a.days_count || 0) - (b.days_count || 0),
-      );
-
-      const requestedDays = requestedMonths * 30;
-
-      // ✅ الحد الأدنى
-      const minPeriod = sortedPeriods[0];
-      const minMonths = Math.max(1, Math.round(minPeriod.days_count / 30));
-      if (requestedMonths < minMonths) {
-        return {
-          isValid: false,
-          message: `الحد الأدنى للحجز الشهري هو ${minMonths} ${
-            minMonths === 1 ? "شهر" : "أشهر"
-          } (${minPeriod.days_count} يوم)`,
-          periodId: minPeriod.id,
-        };
-      }
-
-      // ✅ البحث عن الفترة المطابقة
-      const matchingPeriod = sortedPeriods.find(
-        (p) => requestedDays <= p.days_count,
-      );
-
-      if (!matchingPeriod) {
-        const maxPeriod = sortedPeriods[sortedPeriods.length - 1];
-        const maxMonths = Math.max(1, Math.round(maxPeriod.days_count / 30));
-        return {
-          isValid: false,
-          message: `أقصى فترة متاحة للحجز هي ${maxMonths} ${
-            maxMonths === 1 ? "شهر" : "أشهر"
-          } (${maxPeriod.days_count} يوم)`,
-          periodId: maxPeriod.id,
-        };
-      }
-
-      return {
-        isValid: true,
-        message: "",
-        periodId: matchingPeriod.id,
-      };
-    },
-    [bookingType, monthlyPeriods],
-  );
   // Calculate services total from API response or local
   const servicesTotal = useMemo(() => {
     if (priceData) {
@@ -648,12 +530,12 @@ export const useBookingForm = (
     }
     if (!validate()) {
       toast.error("⚠️ يرجى تصحيح الأخطاء في النموذج");
-      return;
+      return null;
     }
 
     if (!priceData) {
       toast.error("⚠️ يرجى الانتظار لحساب السعر");
-      return;
+      return null;
     }
 
     setIsSubmitting(true);
@@ -718,7 +600,9 @@ export const useBookingForm = (
       );
 
       if (!bookingResult.success) {
-        const errorMessage = extractErrorMessage(bookingResult.error || bookingResult.message);
+        const errorMessage = extractErrorMessage(
+          bookingResult.error || bookingResult.message,
+        );
         toast.error(`❌ ${errorMessage}`);
         setIsSubmitting(false);
         return null;
@@ -864,8 +748,9 @@ export const useBookingForm = (
     resetForm,
     setPeriodId,
     selectedPeriodId,
-     validateMonthlyPeriod, 
-    monthlyPeriods, 
-      availableMonthsData, 
+    validateMonthlyPeriod,
+    monthlyPeriods,
+    availableMonthsData,
+    setAvailableMonthsData,
   };
 };

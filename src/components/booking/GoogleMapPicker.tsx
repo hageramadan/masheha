@@ -6,7 +6,7 @@ import { useState, useEffect, useRef } from 'react';
 import { FaMapMarkerAlt } from 'react-icons/fa';
 
 // تحميل Google Maps API ديناميكياً
-const GOOGLE_MAPS_API_KEY = "AIzaSyBAn_b3jCbl3agJl7CM7WYIHjGWJIExwfQ";
+const GOOGLE_MAPS_API_KEY = "AIzaSyBB4V0D9KeYPCMdDbRjBB9APzxCmBdymtg";
 
 interface GoogleMapPickerProps {
   onLocationSelect: (lat: number, lng: number, address: string) => void;
@@ -208,7 +208,7 @@ export default function GoogleMapPicker({
               <div className="h-full flex items-center justify-center bg-gray-100">
                 <div className="text-center">
                   <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-                  {/* <p className="text-gray-600">جاري تحميل الخريطة...</p> */}
+                 
                 </div>
               </div>
             ) : (

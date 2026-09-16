@@ -10,7 +10,7 @@ export default function Home() {
   const [isLoading, setIsLoading] = useState(true);
 
   const handleFeaturedCarsLoad = useCallback(() => {
-    console.log("✅ FeaturedCars loaded - hiding loading screen");
+   
     setIsLoading(false);
   }, []);
 

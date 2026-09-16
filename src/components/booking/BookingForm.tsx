@@ -10,13 +10,11 @@ import BookingPayment from "./BookingPayment";
 import BookingSummary from "./BookingSummary";
 import { FaLocationDot } from "react-icons/fa6";
 import PhoneInput from "../contact/PhoneInput";
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { format } from "date-fns";
 import { ar } from "date-fns/locale";
 import toast from "react-hot-toast";
 
-import { Calendar } from "@/src/ui/calendar";
-import { Popover, PopoverContent, PopoverTrigger } from "@/src/ui/popover";
 import {
   Select,
   SelectContent,
@@ -25,7 +23,6 @@ import {
   SelectValue,
 } from "@/src/ui/select";
 import { cn } from "@/src/lib/utils";
-import { FaCalendarAlt } from "react-icons/fa";
 import DownloadSection2 from "../home/downloadSection2";
 import GoogleMapPicker from "./GoogleMapPicker";
 import { CarService } from "@/src/services/carService";
@@ -35,8 +32,6 @@ import { useAuth } from "@/src/context/AuthContext";
 import {
   AvailableMonth,
   AvailablePeriod,
-  getAvailableMonths,
-  getFirstAvailableMonth,
 } from "@/src/utils/bookingUtils";
 
 // استيراد Hook Firebase
@@ -45,8 +40,6 @@ import { usePhoneAuth } from "@/src/hooks/usePhoneAuth";
 import OTPPopup from "./OTPPopup";
 
 // مكون السلايدر المخصص
-import DateSlider from "./DateSlider";
-import TimeSlider from "./TimeSlider";
 import Image from "next/image";
 import DateTimeSlider from "./DateTimeSlider";
 import Download3 from "../home/download3";
@@ -71,7 +64,25 @@ export default function BookingForm({
 
   const { user, isAuthenticated, register } = useAuth();
 
-    const {
+  // ✅ استخرج الفترات الشهرية الفريدة من periods prop
+  const monthlyPeriodsFromProps = useMemo(() => {
+    if (!periods || periods.length === 0) return [];
+
+    const unique = new Map<number, any>();
+    periods.forEach((p: any) => {
+      if (p?.id && !unique.has(p.id)) {
+        unique.set(p.id, {
+          id: p.id,
+          days_count: p.days_count,
+          final_price: p.final_price || p.price_total,
+          label: p.label,
+        });
+      }
+    });
+    return Array.from(unique.values());
+  }, [periods]);
+
+  const {
     bookingData,
     errors,
     isSubmitting,
@@ -87,6 +98,7 @@ export default function BookingForm({
     validateMonthlyPeriod,
     monthlyPeriods,
     availableMonthsData,
+    setAvailableMonthsData,
   } = useBookingForm(
     carId,
     car?.pricePerDay || 0,
@@ -94,6 +106,7 @@ export default function BookingForm({
     rentalCompanyId,
     bookingType,
     car?.name || "سياره",
+    monthlyPeriodsFromProps,
   );
 
   // Firebase Phone Auth
@@ -106,14 +119,12 @@ export default function BookingForm({
 
   const [phoneNumber, setPhoneNumber] = useState("");
   const [countryCode, setCountryCode] = useState("+966");
-  const [isCalendarOpen, setIsCalendarOpen] = useState(false);
   const [isMapOpen, setIsMapOpen] = useState(false);
   const [selectedAddress, setSelectedAddress] = useState<string>("");
   const [phoneInputKey, setPhoneInputKey] = useState(0);
 
   // ========== فترات الحجز اليومي ==========
   const [availableDates, setAvailableDates] = useState<AvailableDate[]>([]);
-  const [availableTimes, setAvailableTimes] = useState<AvailableHour[]>([]);
 
   // ========== فترات الحجز الشهري ==========
   const [availableMonths, setAvailableMonths] = useState<AvailableMonth[]>([]);
@@ -123,12 +134,6 @@ export default function BookingForm({
   const [selectedPeriod, setSelectedPeriod] = useState<AvailablePeriod | null>(
     null,
   );
-  const [monthlyAvailableDates, setMonthlyAvailableDates] = useState<
-    AvailableDate[]
-  >([]);
-  const [monthlyAvailableTimes, setMonthlyAvailableTimes] = useState<
-    AvailableHour[]
-  >([]);
 
   const [isLoadingPeriods, setIsLoadingPeriods] = useState(true);
 
@@ -143,7 +148,7 @@ export default function BookingForm({
   // ✅ حالة جديدة لتتبع ما إذا تم التحقق من الهوية بالكامل
   const [isIdentityVerified, setIsIdentityVerified] = useState(false);
 
-  // ✅ حالة جديدة لعرض "جاري التحقق" من أول ما يضغط المستخدم لحد ما تخلص العملية
+  // ✅ حالة جديدة لعرض "جاري التحقق"
   const [isVerifying, setIsVerifying] = useState(false);
 
   // حالة البوب اب
@@ -151,14 +156,14 @@ export default function BookingForm({
 
   // قائمة التواريخ المتاحة للتحديد في السلايدر
   const [availableDateList, setAvailableDateList] = useState<Date[]>([]);
-  // الفهرس المختار في سلايدر التاريخ
   const [selectedDateIndex, setSelectedDateIndex] = useState<number>(0);
+
   // قائمة الأوقات المتاحة للتحديد في سلايدر الوقت
   const [availableTimeList, setAvailableTimeList] = useState<string[]>([]);
-  // الفهرس المختار في سلايدر الوقت
   const [selectedTimeIndex, setSelectedTimeIndex] = useState<number>(0);
 
   const minimumDays = car?.minimumDays || car?.minimum_days || 1;
+
   // ========== الحجز الشهري ==========
   const [monthlyDateList, setMonthlyDateList] = useState<Date[]>([]);
   const [monthlyTimeList, setMonthlyTimeList] = useState<string[]>([]);
@@ -179,49 +184,41 @@ export default function BookingForm({
     const rentalDays = bookingData.rentalDays;
     const paymentMethod = bookingData.selectedPaymentMethod;
 
-    // 1️⃣ التحقق من الاسم
     if (!name) {
       toast.error("يرجى إدخال الاسم");
       return false;
     }
 
-    // 2️⃣ التحقق من رقم الجوال
     if (!phone) {
       toast.error("يرجى إدخال رقم الجوال");
       return false;
     }
 
-    // 3️⃣ التحقق من تاريخ الاستلام (للحجز اليومي)
     if (!rentalDate) {
       toast.error("يرجى اختيار تاريخ الاستلام");
       return false;
     }
 
-    // 4️⃣ التحقق من وقت الاستلام (للحجز اليومي)
     if (!rentalTime) {
       toast.error("يرجى اختيار وقت الاستلام");
       return false;
     }
 
-    // 5️⃣ التحقق من عدد الأيام (للحجز اليومي)
     if (bookingType === "daily" && (!rentalDays || rentalDays < minimumDays)) {
       toast.error(`الحد الأدنى للحجز هو ${minimumDays} أيام`);
       return false;
     }
 
-    // 6️⃣ التحقق من الشهر (للحجز الشهري)
     if (bookingType === "monthly" && !selectedPeriod) {
       toast.error("يرجى اختيار فترة الحجز");
       return false;
     }
 
-    // 7️⃣ التحقق من موقع الاستلام
     if (!selectedAddress) {
       toast.error("يرجى تحديد موقع الاستلام على الخريطة");
       return false;
     }
 
-    // 8️⃣ التحقق من طريقة الدفع
     if (!paymentMethod) {
       toast.error("يرجى اختيار طريقة الدفع");
       return false;
@@ -254,9 +251,8 @@ export default function BookingForm({
       if (user.country_code) {
         setCountryCode(user.country_code);
       }
-      // إذا كان مسجل دخول، اعتبره مسجل بالفعل ومتحقق من هويته
       setIsUserRegistered(true);
-      setIsIdentityVerified(true); // ✅ المستخدم المسجل دخول متحقق تلقائياً
+      setIsIdentityVerified(true);
     }
   }, [isAuthenticated, user, updateField]);
 
@@ -269,15 +265,15 @@ export default function BookingForm({
     setPhoneInputKey((prev) => prev + 1);
     setOtpCode("");
     setIsPhoneVerified(false);
-    setIsIdentityVerified(false); // ✅ إعادة تعيين حالة التحقق
-    setIsVerifying(false); // ✅ إعادة تعيين حالة "جاري التحقق"
+    setIsIdentityVerified(false);
+    setIsVerifying(false);
     setShowOTPInput(false);
     setIsUserRegistered(false);
     setIsOTPPopupOpen(false);
     toast.success("🔄 تم إعادة تعيين النموذج");
   }, [resetForm]);
 
-  // تحويل الوقت من 24 ساعة إلى 12 ساعة مع ص/م
+  // تحويل الوقت من 24 ساعة إلى 12 ساعة
   const formatTimeTo12Hour = (time: string): string => {
     if (!time) return "";
     const [hours, minutes] = time.split(":").map(Number);
@@ -296,10 +292,11 @@ export default function BookingForm({
 
         if (!officeId) {
           console.warn("No office ID found");
+          setIsLoadingPeriods(false);
           return;
         }
 
-        // 🔹 1️⃣ جلب فترات الحجز اليومي (للتواريخ والأوقات) - هذا هو المصدر الرئيسي
+        // 🔹 1️⃣ جلب فترات الحجز اليومي
         const dailyData = await CarService.getAvailablePeriods(
           carIdNumber,
           officeId,
@@ -307,15 +304,23 @@ export default function BookingForm({
         );
 
         console.log("📥 Daily Periods Data:", dailyData);
+        console.log(
+          "📅 available_dates count:",
+          dailyData.available_dates?.length,
+        );
 
         // تخزين بيانات اليومي
         setAvailableDates(dailyData.available_dates || []);
-        const dailyDates = dailyData.available_dates
+
+        const dailyDates = (dailyData.available_dates || [])
           .filter((d) => d.is_available)
           .map((d) => new Date(d.date));
+
+        console.log("📅 dailyDates count (after filter):", dailyDates.length);
+
         setAvailableDateList(dailyDates);
 
-        // 🔹 2️⃣ جلب فترات الحجز الشهري (للأشهر والفترات) - اختياري للحصول على period_id
+        // 🔹 2️⃣ جلب فترات الحجز الشهري
         const monthlyData = await CarService.getAvailablePeriods(
           carIdNumber,
           officeId,
@@ -324,12 +329,15 @@ export default function BookingForm({
 
         console.log("📥 Monthly Periods Data:", monthlyData);
 
+        // ✅ ابعت الأشهر للـ hook
+        if (monthlyData?.available_months?.length) {
+          setAvailableMonthsData(monthlyData.available_months);
+        }
+
         // ========== معالجة الحجز الشهري ==========
         if (bookingType === "monthly") {
-          // ✅ استخدام التواريخ من dailyData مباشرة (بدون تصفية)
           setMonthlyDateList(dailyDates);
 
-          // محاولة الحصول على period_id إذا كان متاحًا من monthlyData
           if (
             monthlyData.available_months &&
             monthlyData.available_months.length > 0
@@ -339,14 +347,13 @@ export default function BookingForm({
             );
             setAvailableMonths(months);
 
-            // اختيار أول شهر وفترة متاحة افتراضيًا للحصول على period_id
+            // اختيار أول شهر وفترة متاحة
             if (months.length > 0 && months[0].available_periods.length > 0) {
               const firstPeriod = months[0].available_periods[0];
               setSelectedPeriod(firstPeriod);
               setPeriodId(firstPeriod.id);
               updateField("rentalDays", firstPeriod.days_count);
 
-              // ✅ حساب عدد الأشهر من days_count (شهر = 30 يوم)
               const monthsCount = Math.max(
                 1,
                 Math.round(firstPeriod.days_count / 30),
@@ -354,22 +361,18 @@ export default function BookingForm({
               setRentalMonths(monthsCount);
             }
           } else {
-            console.warn(
-              "⚠️ No monthly data available, period_id will be null",
-            );
+            console.warn("⚠️ No monthly data available");
             setPeriodId(0);
           }
 
-          // اختيار أول تاريخ تلقائيًا (من dailyDates)
+          // اختيار أول تاريخ تلقائيًا
           if (dailyDates.length > 0) {
             const firstDate = dailyDates[0];
             const firstDateStr = format(firstDate, "yyyy-MM-dd");
 
-            // حفظ التاريخ
             updateField("rentalDate", firstDateStr);
 
-            // البحث عن بيانات اليوم للحصول على الأوقات
-            const dailyDate = dailyData.available_dates.find(
+            const dailyDate = (dailyData.available_dates || []).find(
               (date) => date.date === firstDateStr,
             );
 
@@ -389,18 +392,13 @@ export default function BookingForm({
         }
 
         // تعيين التاريخ الأول تلقائياً للحجز اليومي
-        if (
-          bookingType === "daily" &&
-          dailyDates.length > 0 &&
-          !bookingData.rentalDate
-        ) {
+        if (bookingType === "daily" && dailyDates.length > 0) {
           const firstDate = dailyDates[0];
           const dateStr = format(firstDate, "yyyy-MM-dd");
           updateField("rentalDate", dateStr);
           setSelectedDateIndex(0);
 
-          // جلب أوقات هذا التاريخ
-          const selectedDate = dailyData.available_dates.find(
+          const selectedDate = (dailyData.available_dates || []).find(
             (d) => d.date === dateStr,
           );
           if (selectedDate) {
@@ -431,13 +429,15 @@ export default function BookingForm({
         (d) => d.date === bookingData.rentalDate,
       );
       if (selectedDate) {
-        setAvailableTimes(selectedDate.available_hours || []);
         const times = selectedDate.available_hours
           .filter((h) => h.is_available)
           .map((h) => h.time);
+
         setAvailableTimeList(times);
         setSelectedTimeIndex(0);
-        if (times.length > 0) {
+
+        // ✅ حدّث الوقت فقط لو مش موجود في القائمة الحالية
+        if (times.length > 0 && !times.includes(bookingData.rentalTime)) {
           updateField("rentalTime", times[0]);
         }
       }
@@ -450,21 +450,14 @@ export default function BookingForm({
     }
   }, [minimumDays]);
 
-  const isDateDisabled = (date: Date) => {
-    const dateStr = format(date, "yyyy-MM-dd");
-    const availableDate = availableDates.find((d) => d.date === dateStr);
-    return !availableDate?.is_available;
-  };
-
   const handlePhoneChange = (phone: string, code: string) => {
     setPhoneNumber(phone);
     setCountryCode(code);
     updateField("customerPhone", phone);
-    // ✅ إعادة تعيين حالة التحقق عند تغيير رقم الجوال
     setIsIdentityVerified(false);
     setIsPhoneVerified(false);
     setIsUserRegistered(false);
-    setIsVerifying(false); // ✅
+    setIsVerifying(false);
   };
 
   // دالة تنسيق رقم الهاتف لصيغة Firebase
@@ -482,7 +475,6 @@ export default function BookingForm({
       const name = bookingData.customerName?.trim();
       const phone = bookingData.customerPhone?.trim();
 
-      // ✅ التحقق من الاسم ورقم الجوال فقط (وليس النموذج كامل)
       if (!name) {
         toast.error("يرجى إدخال الاسم");
         return false;
@@ -492,7 +484,6 @@ export default function BookingForm({
         return false;
       }
 
-      // لو مسجل دخول بالفعل، مش محتاج تسجيل
       if (isAuthenticated) {
         setIsUserRegistered(true);
         return true;
@@ -518,61 +509,40 @@ export default function BookingForm({
     }
   };
 
-  // 2️⃣ إرسال OTP (تفتح البوب اب)
-  // const handleSendOTP = async () => {
-  //   const phone = bookingData.customerPhone?.trim();
-  //   if (!phone) {
-  //     toast.error("يرجى إدخال رقم الجوال");
-  //     return false;
-  //   }
-
-  //   const formattedPhone = formatPhoneNumber(phone, countryCode);
-  //   const sent = await sendOTP(formattedPhone);
-
-  //   if (sent) {
-  //     setShowOTPInput(true);
-  //     setIsOTPPopupOpen(true);
-  //     return true;
-  //   }
-  //   return false;
-  // };
+  // 2️⃣ إرسال OTP
   const handleSendOTP = async (): Promise<{
-  success: boolean;
-  errorCode?: string;
-}> => {
-  const phone = bookingData.customerPhone?.trim();
-  if (!phone) {
-    toast.error("يرجى إدخال رقم الجوال");
-    return { success: false, errorCode: "empty-phone" };
-  }
-
-  const formattedPhone = formatPhoneNumber(phone, countryCode);
-  
-  // ✅ cast صريح عشان نضمن الشكل
-  const result = (await sendOTP(formattedPhone)) as {
     success: boolean;
     errorCode?: string;
+  }> => {
+    const phone = bookingData.customerPhone?.trim();
+    if (!phone) {
+      toast.error("يرجى إدخال رقم الجوال");
+      return { success: false, errorCode: "empty-phone" };
+    }
+
+    const formattedPhone = formatPhoneNumber(phone, countryCode);
+
+    const result = (await sendOTP(formattedPhone)) as {
+      success: boolean;
+      errorCode?: string;
+    };
+
+    if (result.success) {
+      setShowOTPInput(true);
+      setIsOTPPopupOpen(true);
+    }
+
+    return result;
   };
-
-  if (result.success) {
-    setShowOTPInput(true);
-    setIsOTPPopupOpen(true);
-  }
-
-  return result;
-};
 
   // 3️⃣ ✅ التحقق من OTP (من البوب اب) - وبعدها Register
   const handleVerifyOTPFromPopup = async (code: string): Promise<boolean> => {
-    // 1️⃣ التحقق من الكود أولاً عبر Firebase
     const firebaseUser = await verifyOTP(code);
 
     if (!firebaseUser) {
-      // ❌ فشل التحقق من الكود - لا نعمل register
       return false;
     }
 
-    // 2️⃣ ✅ تم التحقق من الكود بنجاح - الآن نسجل المستخدم في الـ Backend
     try {
       if (!isUserRegistered && !isAuthenticated) {
         const registered = await handleRegisterUser();
@@ -581,21 +551,18 @@ export default function BookingForm({
           toast.error(
             "تم التحقق من الجوال لكن فشل تسجيل الحساب. حاول مرة أخرى.",
           );
-          // ⚠️ نحتفظ بحالة التحقق من Firebase لكن لا نكمل
           setIsPhoneVerified(true);
           setIsVerifying(false);
           return false;
         }
       }
 
-      // 3️⃣ كل حاجة نجحت
       setIsPhoneVerified(true);
-      setIsIdentityVerified(true); // ✅ تم التحقق من الهوية بالكامل
+      setIsIdentityVerified(true);
       setShowOTPInput(false);
       setIsOTPPopupOpen(false);
-      setIsVerifying(false); // ✅ أوقف حالة "جاري التحقق"
+      setIsVerifying(false);
       toast.success("✓ تم التحقق من هويتك بنجاح");
-      // ⚠️ لا ننفذ submit هنا - المستخدم يضغط زر الحجز بنفسه
       return true;
     } catch (error) {
       console.error("Register after OTP error:", error);
@@ -620,137 +587,78 @@ export default function BookingForm({
     }
   };
 
-  // ✅ دالة التحقق من الهوية (OTP أولاً ثم Register) - للزر الأول
-  // const handleVerifyIdentity = async () => {
-  //   // 1️⃣ التحقق من الاسم ورقم الجوال فقط
-  //   const name = bookingData.customerName?.trim();
-  //   const phone = bookingData.customerPhone?.trim();
+  // ✅ دالة التحقق من الهوية
+  const handleVerifyIdentity = async () => {
+    const name = bookingData.customerName?.trim();
+    const phone = bookingData.customerPhone?.trim();
 
-  //   if (!name) {
-  //     toast.error("يرجى إدخال الاسم");
-  //     return;
-  //   }
-  //   if (!phone) {
-  //     toast.error("يرجى إدخال رقم الجوال");
-  //     return;
-  //   }
+    if (!name) {
+      toast.error("يرجى إدخال الاسم");
+      return;
+    }
+    if (!phone) {
+      toast.error("يرجى إدخال رقم الجوال");
+      return;
+    }
 
-  //   // 2️⃣ لو الهوية متحقق منها بالفعل
-  //   if (isIdentityVerified) {
-  //     toast.success("✓ تم التحقق من هويتك بالفعل");
-  //     return;
-  //   }
+    if (isIdentityVerified) {
+      toast.success("✓ تم التحقق من هويتك بالفعل");
+      return;
+    }
 
-  //   // ✅ ابدأ حالة "جاري التحقق"
-  //   setIsVerifying(true);
+    setIsVerifying(true);
 
-  //   try {
-  //     // 3️⃣ إرسال OTP فقط (بدون register)
-  //     if (!isOTPSent) {
-  //       const sent = await handleSendOTP();
-  //       if (!sent) {
-  //         toast.error("فشل إرسال رمز التحقق");
-  //         setIsVerifying(false);
-  //         return;
-  //       }
-  //     } else {
-  //       // لو OTP مرسل بالفعل، افتح البوب اب
-  //       setIsOTPPopupOpen(true);
-  //     }
-  //     // ⚠️ ملاحظة: لا نغلق isVerifying هنا لأننا مستنيين المستخدم يدخل الكود
-  //     // هيتم إغلاقها في handleVerifyOTPFromPopup بعد النجاح
-  //   } catch (error) {
-  //     console.error(error);
-  //     setIsVerifying(false);
-  //   }
-  // };
-  //39 error message
-  // ✅ دالة التحقق من الهوية (OTP أولاً ثم Register) - للزر الأول
-// ✅ دالة التحقق من الهوية (OTP أولاً ثم Register) - للزر الأول
-const handleVerifyIdentity = async () => {
-  // 1️⃣ التحقق من الاسم ورقم الجوال فقط
-  const name = bookingData.customerName?.trim();
-  const phone = bookingData.customerPhone?.trim();
+    try {
+      if (!isOTPSent) {
+        const result = await handleSendOTP();
 
-  if (!name) {
-    toast.error("يرجى إدخال الاسم");
-    return;
-  }
-  if (!phone) {
-    toast.error("يرجى إدخال رقم الجوال");
-    return;
-  }
+        if (!result.success) {
+          const isCaptchaError =
+            result.errorCode?.includes("-39") ||
+            result.errorCode?.includes("captcha") ||
+            result.errorCode?.includes("invalid-app-credential");
 
-  // 2️⃣ لو الهوية متحقق منها بالفعل
-  if (isIdentityVerified) {
-    toast.success("✓ تم التحقق من هويتك بالفعل");
-    return;
-  }
+          if (isCaptchaError) {
+            console.warn("⚠️ Captcha error - falling back to register only");
 
-  // ✅ ابدأ حالة "جاري التحقق"
-  setIsVerifying(true);
+            const registered = await handleRegisterUser();
 
-  try {
-    // 3️⃣ إرسال OTP (إلا لو مرسل بالفعل)
-    if (!isOTPSent) {
-      const result = await handleSendOTP();
-
-      // ✅ لو فشل بسبب reCAPTCHA (-39) → نكمل بالـ register فقط
-      if (!result.success) {
-        const isCaptchaError =
-          result.errorCode?.includes("-39") ||
-          result.errorCode?.includes("captcha") ||
-          result.errorCode?.includes("invalid-app-credential");
-
-        if (isCaptchaError) {
-          console.warn("⚠️ Captcha error - falling back to register only");
-
-          // ✅ نعمل register مباشرة
-          const registered = await handleRegisterUser();
-
-          if (registered) {
-            setIsIdentityVerified(true);
-            setIsVerifying(false);
-            toast.success("✓ تم تسجيل حسابك بنجاح");
-          } else {
-            toast.error("فشل تسجيل الحساب. حاول مرة أخرى.");
-            setIsVerifying(false);
+            if (registered) {
+              setIsIdentityVerified(true);
+              setIsVerifying(false);
+              toast.success("✓ تم تسجيل حسابك بنجاح");
+            } else {
+              toast.error("فشل تسجيل الحساب. حاول مرة أخرى.");
+              setIsVerifying(false);
+            }
+            return;
           }
+
+          toast.error("فشل إرسال رمز التحقق");
+          setIsVerifying(false);
           return;
         }
-
-        // لو خطأ تاني → نوقف
-        toast.error("فشل إرسال رمز التحقق");
-        setIsVerifying(false);
-        return;
+      } else {
+        setIsOTPPopupOpen(true);
       }
-
-      // OTP اتبعت بنجاح → البوب اب هيفتح من handleSendOTP
-    } else {
-      // OTP مرسل بالفعل → نفتح البوب اب
-      setIsOTPPopupOpen(true);
+    } catch (error) {
+      console.error(error);
+      toast.error("حدث خطأ غير متوقع");
+      setIsVerifying(false);
     }
-  } catch (error) {
-    console.error(error);
-    toast.error("حدث خطأ غير متوقع");
-    setIsVerifying(false);
-  }
-};
+  };
 
-  // معالج الضغط على زر الحجز - للزر الثاني
+  // معالج الضغط على زر الحجز
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    // 1️⃣ التحقق من أن الهوية تم التحقق منها أولاً
     if (!isIdentityVerified && !isAuthenticated) {
       toast.error("يرجى التحقق من هويتك أولاً");
       return;
     }
 
-    // 2️⃣ التحقق من صحة النموذج بالكامل
     if (!validateForm()) return;
 
-    // 3️⃣ تنفيذ الحجز والدفع
     await submit();
   };
 
@@ -793,14 +701,10 @@ const handleVerifyIdentity = async () => {
   // دالة معالجة اختيار التاريخ للحجز الشهري
   const handleMonthlyDateSelect = (date: Date) => {
     const dateStr = format(date, "yyyy-MM-dd");
-
-    // مهم: الشهر بصيغة 2026-11
     const monthKey = dateStr.slice(0, 7);
 
-    // حفظ التاريخ الحقيقي
     updateField("rentalDate", dateStr);
 
-    // البحث عن الشهر في Monthly API
     const month = availableMonths.find(
       (m) => m.month === monthKey && m.is_available,
     );
@@ -815,13 +719,11 @@ const handleVerifyIdentity = async () => {
         setPeriodId(period.id);
         updateField("rentalDays", period.days_count);
 
-        // ✅ حساب عدد الأشهر من days_count
         const monthsCount = Math.max(1, Math.round(period.days_count / 30));
         setRentalMonths(monthsCount);
       }
     }
 
-    // جلب الأوقات من Daily API
     const selectedDate = availableDates.find((d) => d.date === dateStr);
 
     if (selectedDate) {
@@ -871,7 +773,7 @@ const handleVerifyIdentity = async () => {
   };
 
   // ✅ دوال التحكم في عدد الأشهر (للحجز الشهري)
-   const incrementMonths = () => {
+  const incrementMonths = () => {
     const newMonths = (rentalMonths || 1) + 1;
 
     const validation = validateMonthlyPeriod(newMonths);
@@ -892,7 +794,7 @@ const handleVerifyIdentity = async () => {
     }
   };
 
-    const decrementMonths = () => {
+  const decrementMonths = () => {
     const currentMonths = rentalMonths || 1;
     const newMonths = currentMonths - 1;
 
@@ -916,7 +818,7 @@ const handleVerifyIdentity = async () => {
     }
   };
 
-      const handleMonthsChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleMonthsChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = parseInt(e.target.value);
     if (isNaN(value)) return;
 
@@ -928,7 +830,6 @@ const handleVerifyIdentity = async () => {
         position: "top-center",
       });
 
-      // ✅ إعادة تعيين لأقرب قيمة صحيحة
       if (validation.periodId) {
         const period = monthlyPeriods.find(
           (p) => p.id === validation.periodId,
@@ -954,11 +855,6 @@ const handleVerifyIdentity = async () => {
     }
   };
 
-  const formatDate = (date: Date | null) => {
-    if (!date) return "";
-    return format(date, "dd/MM/yyyy", { locale: ar });
-  };
-
   // معالج اختيار الشهر للحجز الشهري
   const handleMonthSelect = (month: AvailableMonth) => {
     setSelectedMonth(month);
@@ -969,83 +865,9 @@ const handleVerifyIdentity = async () => {
       updateField("rentalDays", period.days_count);
       setPeriodId(period.id);
 
-      // ✅ حساب عدد الأشهر من days_count
       const monthsCount = Math.max(1, Math.round(period.days_count / 30));
       setRentalMonths(monthsCount);
     }
-  };
-
-  // عرض الأشهر المتاحة في Select (للحجز الشهري)
-  const renderMonthlySelector = () => {
-    if (bookingType !== "monthly") return null;
-
-    if (isLoadingPeriods) {
-      return (
-        <div className="text-center py-4">
-          <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin mx-auto"></div>
-        </div>
-      );
-    }
-
-    if (availableMonths.length === 0) {
-      return (
-        <div className="text-center py-4 text-gray-500">
-          <p>لا توجد أشهر متاحة للحجز الشهري</p>
-        </div>
-      );
-    }
-
-    return (
-      <div className="space-y-4">
-        <Select
-          value={selectedMonth?.month || ""}
-          onValueChange={(value) => {
-            const month = availableMonths.find((m) => m.month === value);
-            if (month) {
-              handleMonthSelect(month);
-            }
-          }}
-        >
-          <SelectTrigger
-            className={cn(
-              "w-full px-4 py-6 h-auto border-2 rounded-xl focus:ring-0 focus:ring-offset-0",
-              errors.rentalDate
-                ? "border-red-500"
-                : "border-gray-200 focus:border-primary",
-            )}
-          >
-            <SelectValue placeholder="اختر الشهر" />
-          </SelectTrigger>
-          <SelectContent className="max-h-80">
-            {availableMonths.map((month) => (
-              <SelectItem key={month.month} value={month.month}>
-                <div className="flex items-center justify-between w-full">
-                  <span>
-                    {month.month_name} {month.year}
-                  </span>
-                  {month.available_periods.length > 0 && (
-                    <span className="text-sm text-primary font-bold mr-2">
-                      {month.available_periods[0].final_price} ر.س
-                    </span>
-                  )}
-                </div>
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-
-        {/* عرض تفاصيل الفترة المختارة */}
-        {selectedPeriod && (
-          <div className="bg-gray-50 p-3 rounded-lg text-sm">
-            <p className="font-medium text-gray-700">تفاصيل الفترة:</p>
-            <div className="grid grid-cols-2 gap-2 mt-2 text-gray-600">
-              <span>عدد الأيام: {selectedPeriod.days_count} يوم</span>
-              <span>السعر: {selectedPeriod.final_price} ر.س</span>
-            </div>
-          </div>
-        )}
-      </div>
-    );
   };
 
   return (
@@ -1387,7 +1209,6 @@ const handleVerifyIdentity = async () => {
             rentalType={rentalType}
           />
 
-          {/* حاوية reCAPTCHA - مخفية بصريًا لكن موجودة في DOM */}
           <div
             id="recaptcha-container"
             style={{
@@ -1408,8 +1229,8 @@ const handleVerifyIdentity = async () => {
               isCalculating ||
               isRedirecting ||
               isOTPLoading ||
-              isVerifying || // ✅ معطل أثناء التحقق
-              (!isIdentityVerified && !isAuthenticated) // ✅ معطل لو لم يتم التحقق
+              isVerifying ||
+              (!isIdentityVerified && !isAuthenticated)
             }
             className="w-full bg-primary hover:bg-primary-dark text-white py-4 rounded-xl text-lg font-bold transition-all duration-300 hover:scale-[1.02] hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
           >
@@ -1427,12 +1248,10 @@ const handleVerifyIdentity = async () => {
               `احجز الآن `
             )}
           </button>
-          {/* `احجز الآن (${rentalType})` */}
 
-          {/* رسالة توضيحية لو لم يتم التحقق */}
           {!isIdentityVerified && !isAuthenticated && (
             <p className="text-xs text-center text-amber-600">
-              ⚠️ يرجى التحقق من رقم الجوال  لتفعيل زر الحجز
+              ⚠️ يرجى التحقق من رقم الجوال لتفعيل زر الحجز
             </p>
           )}
 
@@ -1447,13 +1266,12 @@ const handleVerifyIdentity = async () => {
         />
       </div>
 
-      {/* OTP Popup */}
       <OTPPopup
         isOpen={isOTPPopupOpen}
         onClose={() => {
           setIsOTPPopupOpen(false);
           setShowOTPInput(false);
-          setIsVerifying(false); // ✅ أوقف حالة "جاري التحقق" لو المستخدم قفل البوب اب
+          setIsVerifying(false);
         }}
         onVerify={handleVerifyOTPFromPopup}
         isLoading={isOTPLoading}
