@@ -562,7 +562,7 @@ export default function BookingForm({
       setShowOTPInput(false);
       setIsOTPPopupOpen(false);
       setIsVerifying(false);
-      toast.success("✓ تم التحقق من هويتك بنجاح");
+      toast.success("تم التحقق بنجاح");
       return true;
     } catch (error) {
       console.error("Register after OTP error:", error);
@@ -602,7 +602,7 @@ export default function BookingForm({
     }
 
     if (isIdentityVerified) {
-      toast.success("✓ تم التحقق من هويتك بالفعل");
+      toast.success(" تم التحقق بالفعل");
       return;
     }
 
