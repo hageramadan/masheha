@@ -217,7 +217,7 @@ export default function GoogleMapPicker({
           </div>
 
           <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
-            <div className="flex-1 min-w-50">
+            {/* <div className="flex-1 min-w-50">
               {address && (
                 <div className="text-sm text-gray-700 bg-gray-50 p-2 rounded-lg">
                   <span className="font-medium text-gray-900">العنوان المحدد: </span>
@@ -231,7 +231,7 @@ export default function GoogleMapPicker({
                   )}
                 </div>
               )}
-            </div>
+            </div> */}
 
             <div className="flex gap-2">
               <button
