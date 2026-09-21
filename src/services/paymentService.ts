@@ -16,7 +16,7 @@ export enum PaymentMethodType {
 
 // تعريف الـ Index لكل طريقة دفع
 export const PaymentMethodIndex: Record<PaymentMethodType, number> = {
-  [PaymentMethodType.APPLE_PAY]: 0,
+  [PaymentMethodType.APPLE_PAY]: 5,
   [PaymentMethodType.VISA]: 1,
   [PaymentMethodType.MADA]: 1,
   [PaymentMethodType.TABBY]: 2,
