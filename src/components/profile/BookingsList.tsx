@@ -272,7 +272,7 @@ export default function BookingsList({ initialBookingId = null }: BookingsListPr
               : "text-gray-600 hover:text-gray-800",
           )}
         >
-          <span>المنتهية</span>
+          <span>قائمة الحجوزات</span>
           {filter === "finished" && (
             <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#012738]"></span>
           )}
@@ -402,7 +402,7 @@ export default function BookingsList({ initialBookingId = null }: BookingsListPr
               >
                 <p className="text-lg font-medium">
                   لا توجد{" "}
-                  {filter === "current" ? "حجوزات حالية" : "حجوزات منتهية"}
+                  {filter === "current" ? "حجوزات حالية" : "حجوزات "}
                 </p>
               </div>
             )}

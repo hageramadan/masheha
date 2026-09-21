@@ -59,9 +59,7 @@ export default function BookingSummary({
       </h2>
 
       <div className="flex justify-between items-center w-full pb-1">
-        {/* <p className="text-gray-600">
-          {car.name} {car.year}
-        </p> */}
+      
         <div className="flex items-center gap-1">
           <div className="p-1 rounded-full">
             <FaMoneyBills className="w-5 h-5 text-[#4b398e] " />
@@ -106,23 +104,16 @@ export default function BookingSummary({
 
               <span className="text-gray-600">رسوم الخدمات الاضافية</span>
             </div>
-            {/* <span className="text-gray-500">خدمات إضافية</span> */}
+          
             <p className="text-[#4b398e] text-sm font-bold">
               {formatCurrency(totals.servicesTotal)}
             </p>
           </div>
         )}
 
-        {/* {deliveryFee > 0 && (
-          <div className="flex justify-between text-sm pb-1 border-b border-gray-200">
-            <span className="text-gray-500">رسوم التوصيل</span>
-            <span className="text-base text-primary">
-              {formatCurrency(deliveryFee)}
-            </span>
-          </div>
-        )} */}
+       
 
-        {totals.tax > 0 && (
+        {/* {totals.tax > 0 && (
           <div className="flex justify-between text-sm pb-2 border-b border-gray-200">
             <div className="flex items-center gap-1">
               <div className="p-1 rounded-full">
@@ -131,12 +122,25 @@ export default function BookingSummary({
 
               <span className="text-gray-600">ضريبة القيمة المضافة</span>
             </div>
-            {/* <span className="text-gray-500">الضريبة</span> */}
+      
             <span className="text-[#4b398e] text-sm font-bold">
               {formatCurrency(totals.tax)}
             </span>
           </div>
-        )}
+        )} */}
+          <div className="flex justify-between text-sm pb-2 border-b border-gray-200">
+            <div className="flex items-center gap-1">
+              <div className="p-1 rounded-full">
+                <FaPercent className="w-4 h-4 text-[#4b398e] " />
+              </div>
+
+              <span className="text-gray-600">ضريبة القيمة المضافة</span>
+            </div>
+      
+            <span className="text-[#4b398e] text-sm font-bold">
+              {formatCurrency(totals.tax)}
+            </span>
+          </div>
       </div>
 
       <div className="space-y-2 pt-2">
