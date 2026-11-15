@@ -6,7 +6,7 @@ const nextConfig = {
     remotePatterns: [
       {
         protocol: 'https',
-        hostname: 'dev.masheha.com',
+        hostname: 'admin.masheha.com',
         port: '',
         pathname: '/**',
       },

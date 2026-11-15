@@ -33,7 +33,7 @@ export class AuthService {
   private static async post(endpoint: string, fields: Record<string, string>): Promise<AuthResponse> {
     const body = new FormData();
     Object.entries(fields).forEach(([key, value]) => body.append(key, value));
-    const response = await fetch(`https://dev.masheha.com/api/user/${endpoint}`, {
+    const response = await fetch(`https://admin.masheha.com/api/user/${endpoint}`, {
       method: 'POST',
       headers: { Accept: 'application/json', 'accept-language': 'ar' },
       body,
