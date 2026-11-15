@@ -176,6 +176,7 @@ export default function ProfileInfo() {
           <div className="flex items-center gap-2">
             <PhoneInput
               value={phoneNumber}
+              countryCode={countryCode}
               onChange={handlePhoneChange}
               required={true}
             
