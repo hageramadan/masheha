@@ -23,7 +23,6 @@ export default function PaymentCallbackContent() {
         // 1️⃣ استخراج جميع المعاملات من URL
         // ============================================
         const params = Object.fromEntries(searchParams.entries());
-        console.log("📥 Payment Callback Params:", params);
 
         // ============================================
         // 2️⃣ تحديد مزود الدفع
@@ -43,15 +42,12 @@ export default function PaymentCallbackContent() {
 
         if (isMISPay) {
           setPaymentProvider("mispay");
-          console.log("🏦 Payment Provider: MIS Pay");
           await handleMISPayCallback(params);
         } else if (isTamara) {
           setPaymentProvider("tamara");
-          console.log("🏦 Payment Provider: Tamara");
           await handleTamaraCallback(params);
         } else if (isPaymob) {
           setPaymentProvider("paymob");
-          console.log("🏦 Payment Provider: Paymob");
           await handlePaymobCallback(params);
         } else {
           // محاولة التعرف على المزود من المعاملات
@@ -87,7 +83,6 @@ export default function PaymentCallbackContent() {
   // 3️⃣ معالجة Callback من Tamara
   // ============================================
   const handleTamaraCallback = async (params: Record<string, string>) => {
-    console.log("🔄 Processing Tamara Callback...");
 
     // معاملات Tamara
     const paymentStatus = searchParams.get("paymentStatus"); // approved, canceled, declined
@@ -130,8 +125,6 @@ export default function PaymentCallbackContent() {
         console.warn(`⚠️ Unknown Tamara status: ${paymentStatus}`);
     }
 
-    console.log(`💰 Tamara Status: ${paymentStatus} - ${statusMessage}`);
-    console.log(`📊 Payment Status Text: ${paymentStatusText}`);
 
     // ============================================
     // 5️⃣ التحقق من وجود البيانات الأساسية
@@ -182,7 +175,6 @@ export default function PaymentCallbackContent() {
       raw: params,
     };
 
-    console.log("📤 Updating Tamara payment with response:", paymentResponse);
 
     // ============================================
     // 8️⃣ تحديث حالة الدفع
@@ -242,7 +234,6 @@ export default function PaymentCallbackContent() {
   // 🔟 معالجة Callback من MIS Pay
   // ============================================
   const handleMISPayCallback = async (params: Record<string, string>) => {
-    console.log("🔄 Processing MIS Pay Callback...");
 
     const code = searchParams.get("code");
     const transactionId = searchParams.get("transaction_id");
@@ -283,7 +274,6 @@ export default function PaymentCallbackContent() {
         console.warn(`⚠️ Unknown MIS Pay code: ${code}`);
     }
 
-    console.log(`💰 MIS Pay Status: ${code} - ${statusMessage}`);
 
     if (!orderUuidParam || !paymentMethodId) {
       console.error("❌ Missing order_uuid or payment_method_id");
@@ -320,7 +310,6 @@ export default function PaymentCallbackContent() {
       raw: params,
     };
 
-    console.log("📤 Updating MIS Pay payment with response:", paymentResponse);
 
     const isUpdated = await UpdatePaymentStatusService.updatePaymentStatus(
       {
@@ -372,7 +361,6 @@ export default function PaymentCallbackContent() {
   // 1️⃣1️⃣ معالجة Callback من Paymob
   // ============================================
   const handlePaymobCallback = async (params: Record<string, string>) => {
-    console.log("🔄 Processing Paymob Callback...");
 
     const id = searchParams.get("id");
     const success = searchParams.get("success");
@@ -414,7 +402,6 @@ export default function PaymentCallbackContent() {
       paymentStatusText = "failed";
     }
 
-    console.log(`💰 Paymob Status: ${isPaymentSuccess ? 'SUCCESS ✅' : 'FAILED ❌'}`);
 
     if (!orderUuidParam || !paymentMethodId) {
       console.error("❌ Missing order_uuid or payment_method_id");
@@ -453,7 +440,6 @@ export default function PaymentCallbackContent() {
       raw: params,
     };
 
-    console.log("📤 Updating Paymob payment with response:", paymentResponse);
 
     const isUpdated = await UpdatePaymentStatusService.updatePaymentStatus(
       {
@@ -497,7 +483,6 @@ export default function PaymentCallbackContent() {
   // 1️⃣2️⃣ معالجة Callback عام
   // ============================================
   const handleGenericCallback = async (params: Record<string, string>) => {
-    console.log("🔄 Processing Generic Callback...");
 
     const orderUuidParam = searchParams.get("order_uuid");
     const paymentStatus = searchParams.get("payment_status");

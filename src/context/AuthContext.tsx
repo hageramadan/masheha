@@ -2,8 +2,9 @@
 // src/context/AuthContext.tsx
 'use client';
 
-import { createContext, useContext, useState, useEffect } from 'react';
+import { createContext, useContext, useState, useEffect, useRef } from 'react';
 import { toast } from 'react-hot-toast';
+import { AuthService, AuthUser, PhoneCredentials, RegistrationData, normalizePhone } from '@/src/services/authService';
 
 interface AuthContextType {
   user: any | null;
@@ -11,8 +12,10 @@ interface AuthContextType {
   token: string | null;
   login: (userData: any, token: string) => void;
   logout: () => Promise<void>;
-  register: (userData: any) => Promise<any>;
-  loginWithPhone: (phone: string, countryCode: string) => Promise<any>;
+  register: (userData: RegistrationData) => Promise<any>;
+  verifyOtp: (credentials: PhoneCredentials, otp: string) => Promise<void>;
+  resendOtp: (credentials: PhoneCredentials) => Promise<void>;
+  clearPendingAuth: () => void;
   getUserProfile: () => Promise<any>;
   updateProfile: (data: { name: string; phone: string; country_code: string }) => Promise<any>;
 }
@@ -23,6 +26,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<any | null>(null);
   const [token, setToken] = useState<string | null>(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+
+  // Keep registration tokens private until the backend accepts the OTP.
+  const pendingAuth = useRef<{ credentials: PhoneCredentials; user: AuthUser; token?: string } | null>(null);
+  const authGeneration = useRef(0);
+  const clearPendingAuth = () => { pendingAuth.current = null; authGeneration.current += 1; };
 
   useEffect(() => {
     const storedUser = localStorage.getItem('user');
@@ -45,11 +53,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   // تسجيل الخروج من الـ API
   const logout = async () => {
+    clearPendingAuth();
     try {
       const currentToken = localStorage.getItem('token');
       
       if (currentToken) {
-        await fetch('https://admin.masheha.com/api/user/logout', {
+        await fetch('https://dev.masheha.com/api/user/logout', {
           method: 'POST',
           headers: {
             'Authorization': `Bearer ${currentToken}`,
@@ -80,7 +89,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         throw new Error('No token found');
       }
 
-      const response = await fetch('https://admin.masheha.com/api/user/me', {
+      const response = await fetch('https://dev.masheha.com/api/user/me', {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${currentToken}`,
@@ -119,7 +128,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       formData.append('country_code', data.country_code);
       formData.append('_method', 'PUT');
 
-      const response = await fetch('https://admin.masheha.com/api/user/update/profile', {
+      const response = await fetch('https://dev.masheha.com/api/user/update/profile', {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${currentToken}`,
@@ -145,79 +154,41 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  // تسجيل الدخول
-  const loginWithPhone = async (phone: string, countryCode: string) => {
-    try {
-      const response = await fetch('https://admin.masheha.com/api/user/login', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          country_code: countryCode,
-          phone: phone,
-        }),
-      });
-
-      const data = await response.json();
-      
-      if (data.result) {
-        const token = data.data?.user?.token;
-        const userData = data.data?.user || { phone, country_code: countryCode };
-        
-        if (token) {
-          login(userData, token);
-          // جلب البيانات الكاملة للمستخدم
-          await getUserProfile();
-        } else {
-          throw new Error('لم يتم استلام التوكن');
-        }
-        return data;
-      } else {
-        throw new Error(data.message || 'فشل تسجيل الدخول');
-      }
-    } catch (error) {
-      console.error('Login error:', error);
-      throw error;
-    }
+  const stageAuthentication = async (credentials: PhoneCredentials, request: () => ReturnType<typeof AuthService.register>) => {
+    clearPendingAuth();
+    const generation = authGeneration.current;
+    const response = await request();
+    if (generation !== authGeneration.current) throw new Error('تم تغيير بيانات التسجيل، حاول مرة أخرى');
+    const user = response.data?.user || {};
+    pendingAuth.current = { credentials: normalizePhone(credentials), user, token: user.token || response.data?.token };
+    return response;
   };
 
-  // التسجيل
-  const register = async (userData: any) => {
-    try {
-      const response = await fetch('https://admin.masheha.com/api/user/register', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          country_code: userData.country_code || '+966',
-          phone: userData.phone,
-          name: userData.name,
-        }),
-      });
+  const register = (data: RegistrationData) => stageAuthentication(data, () => AuthService.register(data));
 
-      const data = await response.json();
-      
-      if (data.result) {
-        const token = data.data?.user?.token;
-        const userDataResponse = data.data?.user || userData;
-        
-        if (token) {
-          login(userDataResponse, token);
-          // جلب البيانات الكاملة للمستخدم
-          await getUserProfile();
-        } else {
-          throw new Error('لم يتم استلام التوكن');
-        }
-        return data;
-      } else {
-        throw new Error(data.message || 'فشل التسجيل');
-      }
-    } catch (error) {
-      console.error('Registration error:', error);
-      throw error;
+  const requirePendingAuth = (credentials: PhoneCredentials) => {
+    const pending = pendingAuth.current;
+    const normalized = normalizePhone(credentials);
+    if (!pending || pending.credentials.phone !== normalized.phone || pending.credentials.country_code !== normalized.country_code) {
+      throw new Error('يرجى طلب رمز تحقق لهذا الرقم أولاً');
     }
+    return pending;
+  };
+
+  const verifyOtp = async (credentials: PhoneCredentials, otp: string) => {
+    const pending = requirePendingAuth(credentials);
+    const response = await AuthService.verifyOtp(pending.credentials, otp);
+    if (pendingAuth.current !== pending) throw new Error('تم تغيير رقم الجوال، اطلب رمز تحقق جديد');
+    const verifiedUser = response.data?.user || {};
+    const verifiedToken = verifiedUser.token || response.data?.token || pending.token;
+    if (!verifiedToken) throw new Error('لم يتم استلام توكن تسجيل الدخول');
+    login({ ...pending.credentials, ...pending.user, ...verifiedUser }, verifiedToken);
+    clearPendingAuth();
+  };
+
+  const resendOtp = async (credentials: PhoneCredentials) => {
+    const pending = requirePendingAuth(credentials);
+    await AuthService.resendOtp(pending.credentials);
   };
 
   return (
@@ -228,7 +199,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       login, 
       logout, 
       register,
-      loginWithPhone,
+      verifyOtp,
+      resendOtp,
+      clearPendingAuth,
       getUserProfile,
       updateProfile,
     }}>

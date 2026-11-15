@@ -9,7 +9,6 @@ export async function POST(request: NextRequest) {
     // 1️⃣ استقبال البيانات من Webhook
     const body = await request.json();
 
-    console.log("📥 Webhook received:", body);
 
     // 2️⃣ استخراج البيانات
     const {

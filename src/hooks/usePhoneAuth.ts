@@ -40,9 +40,8 @@ export const usePhoneAuth = () => {
 
     const verifier = new RecaptchaVerifier(auth, 'recaptcha-container', {
       size: 'invisible',
-      callback: () => console.log('reCAPTCHA solved'),
+      callback: () => {},
       'expired-callback': () => {
-        console.log('reCAPTCHA expired');
         // ✅ عند الانتهاء، نظّف
         if (window.recaptchaVerifier) {
           window.recaptchaVerifier.clear();

@@ -13,6 +13,7 @@ interface PhoneInputProps {
   value: string;
   onChange: (phone: string, countryCode: string) => void;
   required?: boolean;
+  countryCode?: string;
 }
 
 interface CountryCode {
@@ -674,12 +675,17 @@ const getErrorMessage = (
   }
 };
 
-export default function PhoneInput({ value, onChange, required = false }: PhoneInputProps) {
+export default function PhoneInput({ value, onChange, required = false, countryCode }: PhoneInputProps) {
   const [selectedCountry, setSelectedCountry] = useState<CountryCode>(countryCodes[0]);
   const [error, setError] = useState("");
   const [localPhoneNumber, setLocalPhoneNumber] = useState("");
   const [isTouched, setIsTouched] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    const country = countryCodes.find((item) => item.code === countryCode);
+    if (country) setSelectedCountry(country);
+  }, [countryCode]);
 
   // استخراج كود الدولة والرقم من القيمة الأولية
   useEffect(() => {

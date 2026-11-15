@@ -99,11 +99,8 @@ export class PaymentService {
         index,
       };
 
-      console.log(`📤 Processing payment with method: ${PaymentMethodNames[payment_method]}`);
-      console.log(`📤 Index: ${index}, Payment Method ID: ${payment_method}`);
 
       const response = await CarService.checkout(checkoutData, token);
-      console.log(`📥 Payment response:`, response);
 
       let paymentUrl = this.buildPaymentUrl(payment_method, response);
 
@@ -184,7 +181,6 @@ export class PaymentService {
     }
 
     const paymentUrl = `${baseUrl}/?publicKey=${publicKey}&clientSecret=${clientSecret}`;
-    console.log(`🔗 Paymob URL: ${paymentUrl}`);
     return paymentUrl;
   }
 

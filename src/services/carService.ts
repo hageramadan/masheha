@@ -262,7 +262,6 @@ export class CarService extends ApiService {
     officeId: number,
     carId: number,
   ): Promise<CarDetailsResponse> {
-    console.log(`📡 Fetching: /daily-cars/${officeId}/${carId}`);
     try {
       const response = await this.get<ApiResponse<CarDetailsResponse>>(
         `/daily-cars/${officeId}/${carId}`,
@@ -283,13 +282,11 @@ export class CarService extends ApiService {
     officeId: number,
     carId: number,
   ): Promise<CarDetailsResponse> {
-    console.log(`📡 Fetching: /monthly-companies/${officeId}/${carId}`);
     try {
       const response = await this.get<ApiResponse<CarDetailsResponse>>(
         `/monthly-companies/${officeId}/${carId}`,
       );
 
-      console.log("Response:", response);
 
       if (!response.result) {
         throw new Error(
@@ -467,7 +464,6 @@ export class CarService extends ApiService {
         return_url: params.return_url,
       };
 
-      console.log("📤 Checkout Request:", requestBody);
 
       const response = await this.post<ApiResponse<any>>(
         "/pay/checkout",
@@ -478,10 +474,6 @@ export class CarService extends ApiService {
         },
       );
 
-      console.log(
-        "📥 Full Checkout Response:",
-        JSON.stringify(response, null, 2),
-      );
 
       if (!response.result) {
         throw new Error(response.message || "فشل عملية الدفع");
@@ -517,7 +509,6 @@ export class CarService extends ApiService {
         }
       }
 
-      console.log(`🌍 Environment: ${isLive ? '🔴 LIVE (Production)' : '🟢 TEST'}`);
 
       // ============================================
       // 3️⃣ اختيار الـ Public Key المناسب
@@ -530,7 +521,6 @@ export class CarService extends ApiService {
           : this.PUBLIC_KEY_TEST;
       }
 
-      console.log(`🔑 Public Key: ${publicKey}`);
 
       // ============================================
       // 4️⃣ بناء رابط Paymob
@@ -545,19 +535,13 @@ export class CarService extends ApiService {
         // ============================================
         // 5️⃣ طباعة الرابط في الكونسول
         // ============================================
-        console.log("=" .repeat(80));
-        console.log(`🔗 PAYMENT URL (${isLive ? 'LIVE' : 'TEST'}):`);
-        console.log(paymentUrl);
-        console.log("=" .repeat(80));
         
         // ============================================
         // 6️⃣ فتح الرابط في المتصفح
         // ============================================
-        console.log("🚀 Opening payment URL...");
         
         if (typeof window !== 'undefined' && window.location) {
           window.location.href = paymentUrl;
-          console.log("✅ Redirected to payment page");
         } else {
           console.warn("⚠️ window.location not available, returning URL for manual handling");
         }
@@ -572,20 +556,17 @@ export class CarService extends ApiService {
         const installments = paymentData.configuration.available_products.installments;
         if (installments.length > 0 && installments[0]?.web_url) {
           paymentUrl = installments[0].web_url;
-          console.log("🔗 Tabby Payment URL (from installments):", paymentUrl);
         }
       }
 
       // 7.2 Tabby web_url
       if (!paymentUrl && paymentData?.web_url) {
         paymentUrl = paymentData.web_url;
-        console.log("🔗 Tabby web_url:", paymentUrl);
       }
 
       // 7.3 Tamara checkout_url
       if (!paymentUrl && paymentData?.checkout_url) {
         paymentUrl = paymentData.checkout_url;
-        console.log("🔗 Tamara checkout_url:", paymentUrl);
       }
 
       // 7.4 MIGS redirection_url
@@ -593,23 +574,19 @@ export class CarService extends ApiService {
         const firstKey = paymentData.payment_keys[0];
         if (firstKey?.redirection_url) {
           paymentUrl = firstKey.redirection_url;
-          console.log("🔗 Redirection URL (from payment_keys):", paymentUrl);
         }
       }
 
       // 7.5 redirect_url
       if (!paymentUrl && paymentData?.redirect_url) {
         paymentUrl = paymentData.redirect_url;
-        console.log("🔗 redirect_url:", paymentUrl);
       }
 
       // 7.6 payment_url
       if (!paymentUrl && response.data?.payment_url) {
         paymentUrl = response.data.payment_url;
-        console.log("🔗 payment_url:", paymentUrl);
       }
 
-      console.log("🔗 Final Payment URL:", paymentUrl);
 
       if (!paymentUrl) {
         console.error("❌ No payment URL found in response");

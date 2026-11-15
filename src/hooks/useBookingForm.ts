@@ -355,7 +355,6 @@ export const useBookingForm = (
         params.period_id = selectedPeriodId;
       }
 
-      console.log("📤 Calculate Price Params:", params);
 
       const response = await CarService.calculatePrice(params);
       setPriceData(response);
@@ -633,7 +632,6 @@ export const useBookingForm = (
         token,
       );
 
-      console.log("Payment Result:", paymentResult);
 
       if (paymentResult.success) {
         resetForm();

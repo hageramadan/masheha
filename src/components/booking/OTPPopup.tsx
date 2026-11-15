@@ -1,8 +1,8 @@
-// src/components/booking/OTPPopup.tsx
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
-import { FaTimes } from 'react-icons/fa';
+import { Dialog } from '@base-ui/react/dialog';
+import { LoaderCircle, Timer, X } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 interface OTPPopupProps {
@@ -11,238 +11,133 @@ interface OTPPopupProps {
   onVerify: (otp: string) => Promise<boolean>;
   isLoading: boolean;
   phoneNumber?: string;
-  onResend: () => void;
+  onResend: () => Promise<boolean>;
 }
 
-export default function OTPPopup({
-  isOpen,
-  onClose,
-  onVerify,
-  isLoading,
-  phoneNumber,
-  onResend,
-}: OTPPopupProps) {
-  const [otp, setOtp] = useState(['', '', '', '', '', '']);
+const emptyOtp = () => ['', '', '', ''];
+const normalizeDigits = (value: string) => value
+  .replace(/[٠-٩]/g, (digit) => String(digit.charCodeAt(0) - 0x660))
+  .replace(/[۰-۹]/g, (digit) => String(digit.charCodeAt(0) - 0x6f0))
+  .replace(/\D/g, '');
+
+export default function OTPPopup({ isOpen, onClose, onVerify, isLoading, phoneNumber, onResend }: OTPPopupProps) {
+  const [otp, setOtp] = useState(emptyOtp);
   const [isVerifying, setIsVerifying] = useState(false);
+  const [isResending, setIsResending] = useState(false);
+  const [secondsLeft, setSecondsLeft] = useState(59);
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
+  const busy = useRef(false);
+  const cooldown = useRef<{ phone?: string; deadline: number } | null>(null);
+  const disabled = isLoading || isVerifying || isResending;
 
-  // تركيز على أول خانة عند فتح البوب اب
   useEffect(() => {
-    if (isOpen) {
-      setOtp(['', '', '', '', '', '']);
-      setIsVerifying(false);
-      setTimeout(() => {
-        inputRefs.current[0]?.focus();
-      }, 100);
+    if (!isOpen) return;
+    setOtp(emptyOtp());
+    if (!cooldown.current || cooldown.current.phone !== phoneNumber) {
+      cooldown.current = { phone: phoneNumber, deadline: Date.now() + 59000 };
     }
-  }, [isOpen]);
+    const tick = () => setSecondsLeft(Math.max(0, Math.ceil(((cooldown.current?.deadline || 0) - Date.now()) / 1000)));
+    tick();
+    const interval = window.setInterval(tick, 1000);
+    return () => window.clearInterval(interval);
+  }, [isOpen, phoneNumber]);
 
-  // معالج تغيير كل خانة
-  const handleChange = (index: number, value: string) => {
-    // السماح فقط بالأرقام
-    if (value && !/^\d$/.test(value)) return;
-
-    const newOtp = [...otp];
-    newOtp[index] = value;
-    setOtp(newOtp);
-
-    // الانتقال للخانة التالية تلقائياً
-    if (value && index < 5) {
-      inputRefs.current[index + 1]?.focus();
-    }
-  };
-
-  // معالج المفاتيح (بما في ذلك الأسهم)
-  const handleKeyDown = (index: number, e: React.KeyboardEvent<HTMLInputElement>) => {
-    const currentValue = otp[index];
-
-    // مفتاح Backspace: يمسح الخانة الحالية ويرجع للخانة السابقة
-    if (e.key === 'Backspace') {
-      if (currentValue) {
-        // لو في قيمة، امسحها
-        const newOtp = [...otp];
-        newOtp[index] = '';
-        setOtp(newOtp);
-      } else if (index > 0) {
-        // لو مفيش قيمة، ارجع للخانة السابقة
-        inputRefs.current[index - 1]?.focus();
-      }
-      e.preventDefault();
-      return;
-    }
-
-    // مفتاح Delete: يمسح الخانة الحالية
-    if (e.key === 'Delete') {
-      const newOtp = [...otp];
-      newOtp[index] = '';
-      setOtp(newOtp);
-      e.preventDefault();
-      return;
-    }
-
-    // التنقل بالأسهم (يمين/شمال)
-    if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') {
-      e.preventDefault();
-      
-      if (e.key === 'ArrowRight') {
-        // انتقل للخانة التي على اليمين (في وضع RTL، اليمين هو التالي)
-        if (index < 5) {
-          inputRefs.current[index + 1]?.focus();
-        }
-      } else if (e.key === 'ArrowLeft') {
-        // انتقل للخانة التي على اليسار (في وضع RTL، اليسار هو السابق)
-        if (index > 0) {
-          inputRefs.current[index - 1]?.focus();
-        }
-      }
-      return;
-    }
-
-    // مفتاح Enter: ينفذ التحقق
-    if (e.key === 'Enter') {
-      e.preventDefault();
-      handleVerify();
-      return;
-    }
-
-    // منع إدخال أي شيء غير الأرقام
-    if (e.key && !/^\d$/.test(e.key) && e.key !== 'Tab') {
-      e.preventDefault();
-    }
-  };
-
-  // معالج Paste (لصق الكود كامل)
-  const handlePaste = (e: React.ClipboardEvent<HTMLInputElement>) => {
-    e.preventDefault();
-    const pastedData = e.clipboardData.getData('text').trim();
-    const numbers = pastedData.replace(/\D/g, '').slice(0, 6);
-    
-    if (numbers.length > 0) {
-      const newOtp = [...otp];
-      for (let i = 0; i < numbers.length && i < 6; i++) {
-        newOtp[i] = numbers[i];
-      }
-      setOtp(newOtp);
-      
-      // الانتقال للخانة التالية بعد اللصق
-      const nextIndex = Math.min(numbers.length, 5);
-      setTimeout(() => {
-        inputRefs.current[nextIndex]?.focus();
-      }, 10);
-    }
-  };
-
-  // معالج التحقق
-  const handleVerify = async () => {
-    const otpCode = otp.join('');
-    if (otpCode.length < 6) {
-      toast.error('يرجى إدخال رمز التحقق المكون من 6 أرقام');
-      return;
-    }
-
+  async function verify(code: string) {
+    if (busy.current || disabled || code.length !== 4) return;
+    busy.current = true;
     setIsVerifying(true);
-    const success = await onVerify(otpCode);
-    setIsVerifying(false);
-    
-    if (success) {
-      setOtp(['', '', '', '', '', '']);
+    try {
+      if (await onVerify(code)) setOtp(emptyOtp());
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'تعذر تأكيد رمز التحقق');
+    } finally {
+      busy.current = false;
+      setIsVerifying(false);
     }
-  };
+  }
 
-  // اختيار النص بالكامل عند الضغط (يسهل النسخ)
-  const handleFocus = (e: React.FocusEvent<HTMLInputElement>) => {
-    e.target.select();
-  };
+  function fillDigits(index: number, value: string) {
+    const digits = normalizeDigits(value).slice(0, 4);
+    const next = [...otp];
+    if (!digits) next[index] = '';
+    else {
+      const start = digits.length === 4 ? 0 : index;
+      for (let offset = 0; offset < digits.length && start + offset < 4; offset++) next[start + offset] = digits[offset];
+      inputRefs.current[Math.min(start + digits.length, 3)]?.focus();
+    }
+    setOtp(next);
+    if (next.every(Boolean)) void verify(next.join(''));
+  }
 
-  if (!isOpen) return null;
+  async function resend() {
+    if (secondsLeft > 0 || disabled || busy.current) return;
+    busy.current = true;
+    setIsResending(true);
+    try {
+      if (await onResend()) {
+        cooldown.current = { phone: phoneNumber, deadline: Date.now() + 59000 };
+        setSecondsLeft(59);
+        setOtp(emptyOtp());
+        inputRefs.current[0]?.focus();
+      }
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'تعذر إعادة إرسال الرمز');
+    } finally {
+      busy.current = false;
+      setIsResending(false);
+    }
+  }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm animate-fadeIn">
-      <div className="bg-white relative rounded-3xl p-6 lg:p-8 max-w-md w-full mx-4 shadow-2xl animate-scaleIn">
-        {/* Header */}
-        <div className="flex items-center justify-center mb-6">
-          <div className='flex flex-col items-center justify-center'>
-            <h2 className="text-xl font-bold text-gray-800"> رمز التحقق</h2>
-            <p className="text-sm text-gray-500 mt-1">
-              تم إرسال رمز مكون من 6 أرقام إلى
-              <span className="font-bold text-center text-primary block mt-0.5" dir='ltr'>
-                {phoneNumber || 'جوالك'}
-              </span>
-            </p>
+    <Dialog.Root open={isOpen} onOpenChange={(open) => { if (!open && !busy.current && !isLoading) onClose(); }} disablePointerDismissal>
+      <Dialog.Portal>
+        <Dialog.Backdrop className="fixed inset-0 z-[80] bg-black/35" />
+        <Dialog.Popup dir="rtl" initialFocus={() => inputRefs.current[0]}
+          className="fixed left-1/2 top-[32%] z-[81] w-[calc(100%-2rem)] max-w-[480px] -translate-x-1/2 -translate-y-1/2 rounded-[18px] bg-white px-7 pb-10 pt-10 shadow-xl outline-none sm:top-1/2 sm:px-10 sm:pb-11 sm:pt-11">
+          <Dialog.Title className="sr-only">رمز التحقق</Dialog.Title>
+          <Dialog.Description className="sr-only">أدخل الرمز المكون من أربعة أرقام المرسل إلى {phoneNumber || 'رقم جوالك'}. سيتم تأكيده تلقائياً عند اكتماله.</Dialog.Description>
+          <Dialog.Close type="button" disabled={disabled} aria-label="إغلاق رمز التحقق"
+            className="absolute left-2 top-2 flex size-7 items-center justify-center rounded-full text-gray-400 hover:bg-gray-100 disabled:opacity-40">
+            <X className="size-4" strokeWidth={1.5} />
+          </Dialog.Close>
+          <div className="flex justify-center gap-2.5 sm:gap-3" dir="ltr" aria-label="رمز التحقق">
+            {otp.map((digit, index) => (
+              <input key={index} ref={(element) => { inputRefs.current[index] = element; }}
+                type="text" inputMode="numeric" autoComplete={index === 0 ? 'one-time-code' : 'off'}
+                maxLength={4} value={digit} aria-label={`الرقم ${index + 1} من رمز التحقق`} disabled={disabled}
+                onChange={(event) => fillDigits(index, event.target.value)}
+                onPaste={(event) => { event.preventDefault(); fillDigits(index, event.clipboardData.getData('text')); }}
+                onFocus={(event) => event.target.select()}
+                onKeyDown={(event) => {
+                  if (event.key === 'Enter') { event.preventDefault(); void verify(otp.join('')); }
+                  else if (event.key === 'Backspace' && !otp[index] && index > 0) {
+                    event.preventDefault();
+                    const next = [...otp];
+                    next[index - 1] = '';
+                    setOtp(next);
+                    inputRefs.current[index - 1]?.focus();
+                  } else if (event.key === 'ArrowLeft' || event.key === 'ArrowRight') {
+                    event.preventDefault();
+                    inputRefs.current[Math.max(0, Math.min(3, index + (event.key === 'ArrowLeft' ? -1 : 1)))]?.focus();
+                  }
+                }}
+                className="h-14 w-14 min-w-0 rounded-[17px] border-[1.5px] border-[#d7d7d7] bg-[#fcfaf6] text-center text-2xl font-bold text-primary outline-none transition-colors focus:border-primary focus:ring-2 focus:ring-primary/10 disabled:opacity-60 sm:h-16 sm:w-16 sm:rounded-[19px]"
+              />
+            ))}
           </div>
-         
-        </div>
-         <button
-            onClick={onClose}
-            className=" absolute top-3 left-3 p-2 hover:bg-gray-100 rounded-full transition-colors"
-            aria-label="إغلاق"
-          >
-            <FaTimes className="text-gray-500 text-xl" />
-          </button>
-
-        {/* خانات OTP */}
-        <div className="flex justify-center gap-2 lg:gap-3 my-8" dir="ltr">
-          {otp.map((digit, index) => (
-            <input
-              key={index}
-              ref={(el) => {
-                inputRefs.current[index] = el;
-              }}
-              type="text"
-              inputMode="numeric"
-              maxLength={1}
-              value={digit}
-              onChange={(e) => handleChange(index, e.target.value)}
-              onKeyDown={(e) => handleKeyDown(index, e)}
-              onPaste={handlePaste}
-              onFocus={handleFocus}
-              disabled={isVerifying || isLoading}
-              className={`
-                w-12 h-14 lg:w-14 lg:h-16 
-                text-center text-2xl lg:text-3xl font-bold 
-                border-2 rounded-xl 
-                focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20
-                transition-all duration-200
-                ${digit ? 'border-primary bg-primary/5' : 'border-gray-200'}
-                ${(isVerifying || isLoading) ? 'opacity-50 cursor-not-allowed' : ''}
-                select-all
-              `}
-              autoFocus={index === 0}
-              dir="ltr"
-            />
-          ))}
-        </div>
-
-       
-
-        {/* أزرار */}
-        <div className="space-y-3">
-          <button
-            onClick={handleVerify}
-            disabled={isVerifying || isLoading}
-            className="w-full bg-primary hover:bg-primary/90 text-white py-3.5 rounded-xl font-bold text-lg transition-all duration-200 hover:scale-[1.02] disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {isVerifying ? (
-              <span className="flex items-center justify-center gap-2">
-                <span className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
-                جاري التحقق...
-              </span>
-            ) : (
-              ' تحقق'
-            )}
-          </button>
-
-          <div className="text-center">
-            <button
-              onClick={onResend}
-              disabled={isVerifying || isLoading}
-              className="text-sm text-primary hover:underline disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              لم يصلك الرمز؟ أعد الإرسال
-            </button>
+          <div className="mt-6 flex items-center gap-2 text-[#606060]" dir="ltr" role="timer" aria-label={`إعادة الإرسال متاحة بعد ${secondsLeft} ثانية`}>
+            <span className="text-sm font-bold tabular-nums sm:text-base">{`${String(Math.floor(secondsLeft / 60)).padStart(2, '0')}:${String(secondsLeft % 60).padStart(2, '0')}`}</span>
+            <Timer className="size-5 text-[#c8cdd0]" fill="currentColor" strokeWidth={1.5} aria-hidden="true" />
           </div>
-        </div>
-      </div>
-    </div>
+          <div className="mt-7 flex flex-wrap items-center justify-center gap-1.5 text-sm text-[#747474] sm:text-base">
+            <span>لم تستلم الرمز؟</span>
+            <button type="button" onClick={() => void resend()} disabled={secondsLeft > 0 || disabled}
+              className="font-bold text-primary enabled:hover:underline disabled:cursor-default disabled:text-[#a3a3a3]">إعادة إرسال</button>
+          </div>
+          <div role="status" className="sr-only">{isVerifying ? 'جاري التحقق من الرمز' : isResending ? 'جاري إعادة إرسال الرمز' : ''}</div>
+          {(isVerifying || isResending) && <LoaderCircle className="absolute bottom-3 left-1/2 size-4 -translate-x-1/2 animate-spin text-primary" aria-hidden="true" />}
+        </Dialog.Popup>
+      </Dialog.Portal>
+    </Dialog.Root>
   );
 }

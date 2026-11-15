@@ -47,7 +47,6 @@ export default function Stats({
 }: StatsProps) {
   // إضافة علامة في DOM فور تحميل المكون
   useEffect(() => {
-    console.log("✅ Stats component mounted!");
   }, []);
 
   return (

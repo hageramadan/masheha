@@ -180,7 +180,6 @@ export const useExtendBooking = ({ bookingId, carName, onSuccess }: UseExtendBoo
         token,
       );
 
-      console.log("📤 Payment Result:", paymentResult);
 
       if (paymentResult.success) {
         if (paymentResult.isCash) {

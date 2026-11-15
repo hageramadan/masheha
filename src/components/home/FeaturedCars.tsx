@@ -178,7 +178,6 @@ export default function FeaturedCars({ onLoad }: FeaturedCarsProps) {
                     (activeTab === "monthly" && monthlyData !== null);
       
       if (hasData) {
-        console.log("✅ FeaturedCars: Data loaded! Waiting for Stats to mount...");
         hasCalledOnLoad.current = true;
         setIsDataLoaded(true);
         
@@ -186,7 +185,6 @@ export default function FeaturedCars({ onLoad }: FeaturedCarsProps) {
         const checkStats = () => {
           const statsElement = document.querySelector('[data-stats-loaded]');
           if (statsElement) {
-            console.log("✅ Stats found in DOM! Calling onLoad...");
             onLoad();
             return true;
           }
@@ -204,7 +202,6 @@ export default function FeaturedCars({ onLoad }: FeaturedCarsProps) {
           if (checkStats() || attempts >= maxAttempts) {
             clearInterval(interval);
             if (attempts >= maxAttempts) {
-              console.log("⚠️ Stats not found after 3 seconds, calling onLoad anyway...");
               onLoad();
             }
           }
@@ -222,7 +219,6 @@ export default function FeaturedCars({ onLoad }: FeaturedCarsProps) {
                     (activeTab === "monthly" && monthlyData !== null);
       
       if (!hasData) {
-        console.log("⚠️ FeaturedCars: No data but loading finished. Calling onLoad after delay...");
         hasCalledOnLoad.current = true;
         setIsDataLoaded(true);
         

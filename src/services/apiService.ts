@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
-const BASE_URL = "https://admin.masheha.com/api";
+const BASE_URL = "https://dev.masheha.com/api";
 
 export class ApiService {
   protected static async request<T>(
@@ -15,11 +15,6 @@ export class ApiService {
       ...options.headers,
     };
 
-    console.log(`📡 ${options.method || "GET"} Request:`, {
-      url,
-      headers,
-      body: options.body,
-    });
 
     try {
       const response = await fetch(url, { ...options, headers });

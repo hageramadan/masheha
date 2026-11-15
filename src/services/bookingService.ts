@@ -145,7 +145,6 @@ export class BookingService {
     token: string
   ): Promise<{ success: boolean; message: string; paymentUrl?: string; paymentData?: any }> {
     try {
-      console.log('📤 processPayment called with:', bookingData);
 
       // بناء المعاملات مع callback_url
       const checkoutParams: CheckoutRequest = {
@@ -161,11 +160,9 @@ export class BookingService {
         return_url: bookingData.return_url,     // إرسال return_url
       };
 
-      console.log('📤 Processing payment:', checkoutParams);
 
       const response = await CarService.checkout(checkoutParams, token);
       
-      console.log('📥 Checkout response in processPayment:', response);
 
       // تحقق من وجود رابط الدفع
       if (!response.payment_url) {

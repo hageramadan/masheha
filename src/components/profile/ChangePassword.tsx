@@ -62,7 +62,6 @@ export default function ChangePassword({ onClose }: ChangePasswordProps) {
     // محاكاة طلب API
     try {
       await new Promise(resolve => setTimeout(resolve, 1500));
-      console.log('تم تغيير كلمة المرور بنجاح');
       // هنا يمكنك إضافة منطق حفظ كلمة المرور
       onClose(); // إغلاق المودال بعد النجاح
     } catch (error) {
