@@ -86,9 +86,11 @@ export default function BookingCustomerInfo({
         </div>
       </div>
 
-      {!isAuthenticated && (
-        <RegistrationFields value={registrationFields} onChange={setRegistrationFields} disabled={isVerifying || isOTPLoading || !!otpPhone} />
-      )}
+      <RegistrationFields
+        value={registrationFields}
+        onChange={setRegistrationFields}
+        disabled={isAuthenticated || isVerifying || isOTPLoading || !!otpPhone}
+      />
 
       <button
         type="button"
